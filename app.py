@@ -17,7 +17,33 @@ def get_db_connection():
 @app.route("/")
 def index():
     if "user_id" in session:
-        return render_template("index.html", user_id=session["user_id"])
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Obtener movimientos
+        cursor.execute("""
+            SELECT * FROM movimientos 
+            WHERE usuario_id = %s
+        """, (session["user_id"],))
+
+        movimientos = cursor.fetchall()
+
+        # Calcular totales
+        ingresos = sum(m["monto"] for m in movimientos if m["tipo"] == "ingreso")
+        gastos = sum(m["monto"] for m in movimientos if m["tipo"] == "gasto")
+        saldo = ingresos - gastos
+
+        conn.close()
+
+        return render_template(
+            "index.html",
+            user_id=session["user_id"],
+            movimientos=movimientos,
+            ingresos=ingresos,
+            gastos=gastos,
+            saldo=saldo
+        )
+
     return redirect("/login")
 
 # REGISTER
@@ -87,3 +113,45 @@ def test_db():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+@app.route("/")
+def dashboard():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    user_id = session["user_id"]
+
+    # Obtener movimientos
+    cursor.execute("""
+        SELECT m.*, c.nombre AS categoria
+        FROM movimientos m
+        LEFT JOIN categorias c ON m.categoria_id = c.id
+        WHERE m.usuario_id = %s
+        ORDER BY m.fecha DESC
+    """, (user_id,))
+    movimientos = cursor.fetchall()
+
+    # Totales
+    cursor.execute("""
+        SELECT 
+            SUM(CASE WHEN tipo='ingreso' THEN monto ELSE 0 END) AS ingresos,
+            SUM(CASE WHEN tipo='gasto' THEN monto ELSE 0 END) AS gastos
+        FROM movimientos
+        WHERE usuario_id = %s
+    """, (user_id,))
+    totales = cursor.fetchone()
+
+    ingresos = totales["ingresos"] or 0
+    gastos = totales["gastos"] or 0
+    saldo = ingresos - gastos
+
+    conn.close()
+
+    return render_template("dashboard.html",
+                           movimientos=movimientos,
+                           ingresos=ingresos,
+                           gastos=gastos,
+                           saldo=saldo)    
