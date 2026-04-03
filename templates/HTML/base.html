@@ -1,24 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Base</title>
-
-
+    <link rel="stylesheet" href="../CSS/styles.css">
+    <script src="../JavaScript/main.js" defer></script>
 </head>
 <body>
+    <div id="site-header">
 
-    <nav class="nav-menu">
-        <a href="home.html">Home</a>
-        <a href="perfil.html">Perfil</a>
-        <a href="camilia.html">Familia</a>
-        <a href="categorias.html">Categorías</a>
-        <a href="movimientos.html">Movimientos</a>
-        <a href="reportes.html">Reportes</a>
-    </nav>
+    <header class="header">
+        <div class="logo">
+            <img src="../Imagenes/logo.png" alt="Logo" class="logo-image">
+            <h1>MoneyHome</h1>
+        </div>
+        <button class="menu-toggle" id="menu-toggle">☰</button>
 
-    <div class="user-seleccion"
-    
+
+        <nav class="nav-menu">
+            <a href="dashboard.html">Home</a>
+            <a href="perfil.html">Perfil</a>
+            <a href="familia.html">Familia</a>
+            <a href="categorias.html">Categorías</a>
+            <a href="movimientos.html">Movimientos</a>
+            <a href="reportes.html">Reportes</a>
+        </nav>
+    </header>
+
+        <div class="user-section">
+            <span class="welcome">Bienvenida, Paula</span>
+            <button class="logout-btn">Cerrar sesión</button>
+        </div>
+    </div>
+
+
 </body>
 </html>
