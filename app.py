@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, session
 import mysql.connector
-
-app = Flask(__name__)
+#rutas
+app = Flask(__name__, template_folder='templates/HTML', static_folder='templates/static')
 app.secret_key = "secretkey"
 
 # Conexión MySQL
@@ -110,11 +110,9 @@ def test_db():
         return "✅ Conexión a MySQL OK"
     except Exception as e:
         return str(e)
-
-if __name__ == "__main__":
-    app.run(debug=True)
-
-@app.route("/")
+# RUTAS DE PRUEBA
+# DASHBOARD
+@app.route("/dashboard")
 def dashboard():
     if "user_id" not in session:
         return redirect("/login")
@@ -154,4 +152,7 @@ def dashboard():
                            movimientos=movimientos,
                            ingresos=ingresos,
                            gastos=gastos,
-                           saldo=saldo)    
+                           saldo=saldo)
+# PERFIL
+if __name__ == "__main__":
+    app.run(debug=True)    
