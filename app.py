@@ -153,6 +153,10 @@ def dashboard():
                            ingresos=ingresos,
                            gastos=gastos,
                            saldo=saldo)
-# PERFIL
+# llamado a la ruta de movimientos, aún no implementada, pero se muestra el template
+@app.route("/mov")
+def mov():
+    return render_template("mov.html")
+
 if __name__ == "__main__":
     app.run(debug=True)    
