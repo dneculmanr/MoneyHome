@@ -1,0 +1,168 @@
+html, body {
+  height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  position: relative;
+  justify-content: space-between;
+  background-color: #f8b26a;
+  padding: 10px 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.nav-menu {
+display: none;
+position: absolute;
+top: 100%;
+left: 0;
+right: auto;
+width: 220px;
+flex-direction: column;
+gap: 10px;
+background-color: #f8b26a;
+padding: 10px;
+border-radius: 0 0 8px 8px;
+box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+z-index: 1000;
+min-height: 80vh;
+justify-content: space-between;
+}
+
+.menu-toggle {
+order: 2;
+}
+
+.logo {
+order: 3;
+margin-left: auto;
+}
+
+/* Logo */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.logo-image {
+  width: 70px;
+  height: 70px;
+}
+.logo h1 {
+  font-size: 1.4rem;
+  color: #fff;
+}
+
+
+/* Mostrar menú en móvil */
+.nav-menu.active {
+display: flex;
+}
+
+/* Botón de menú (hamburguesa) */
+.menu-toggle {
+display: block;
+font-size: 1.8rem;
+background: none;
+border: none;
+color: #fff;
+cursor: pointer;
+}
+
+/* Menú en móvil */
+@media (max-width: 768px) {
+  .menu-toggle {
+    display: block; /* mostrar hamburguesa */
+    order: 1;
+  }
+
+  .logo {
+    order: 2;
+    margin-left: auto;
+  }
+
+}
+/* Sección de usuario */
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  justify-content: flex-end;
+  background-color: #d3bfbf;
+}
+.welcome {
+  color: #2a2828;
+  font-size: 0.9rem;
+  text-align: right;
+}
+.logout-btn {
+  background-color: #e74c3c;
+  border: none;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.logout-btn:hover {
+  background-color: #c0392b;
+}
+
+.nav-menu .logout-btn {
+  width: 100%;
+  text-align: left;
+  margin-top: auto;
+  padding: 8px 12px;
+}
+
+/*** Footer */
+.site-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px;
+  padding: 20px;
+  background-color: #f8b26a;
+  margin-top: auto;
+  width: 100%;
+}
+
+
+
+#footer-ayuda {
+  text-align: left;
+}
+#footer-ayuda a {
+color: black;
+text-decoration: none;
+}
+
+/* Cambia el color del enlace al pasar el mouse por encima (HOVER)*/
+
+#footer-ayuda a:hover {
+color: #0d6efd;
+}
+
+.footer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .site-footer {
+    flex-direction: column;
+  }
+
+  .footer-content,
+  #footer-ayuda {
+    width: 100%;
+    text-align: left;
+  }
+}
