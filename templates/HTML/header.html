@@ -1,25 +1,22 @@
-    <div id="site-header">
+<div id="site-header">
     <header class="header">
-        
-        <div class="logo">
-            <h1>MoneyHome</h1>
-            <img src="/static/Imagenes/logo.png" alt="Logo" class="logo-image">
-        </div>
+
         <button class="menu-toggle" id="menu-toggle">☰</button>
 
+        <div class="logo">
+            <h1>MoneyHome</h1>
+            <img src="{{ url_for('static', filename='Imagenes/logo.png') }}" class="logo-image">
+        </div>
 
-        <nav class="nav-menu">
-            <a href="/dashboard">Home</a>
-            <a href="perfil.html">Perfil</a>
-            <a href="/familia">Familia</a>
-            <a href="/categorias">Categorías</a>
-            <a href="mov">Movimientos</a>
-            <a href="reportes.html">Reportes</a>
-            <button class="logout-btn" onclick="location.href='/logout'">Cerrar sesión</button>
+        <nav class="nav-menu" id="nav-menu">
+            <a href="/">Home</a>
+            <a href="/movimientos">Movimientos</a>
+            <a href="/logout">Cerrar sesión</a>
         </nav>
+
     </header>
 
-        <div class="user-section">
-            <span class="welcome">Bienvenida, Paula</span>
-        </div>
+    <div class="user-section">
+        <span class="welcome">Bienvenido</span>
     </div>
+</div>
