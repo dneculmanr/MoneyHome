@@ -1,4 +1,19 @@
-# 💰 MoneyHome - Sistema de Finanzas del Hogar
+# 💰 MoneyHomev1.1 - Sistema de Finanzas del Hogar
+
+#ajustes importantes
+
+se le hizo en la base de datos un ajuste para cambiar usuario_id por user_id
+
+ALTER TABLE movimientos CHANGE usuario_id user_id INT;
+
+actualmente lo que funciona es login/register(se agrego el mismo tema de css)/dashboard con menu hamburguesa que contiene home,movimientos y cerrar sesion
+
+dentro de movimientos tenemos el apartado crear movimiento funcionando y al momento de hacer clic en ingresos o gastos se desglozan cuales son 
+
+cuando uno pulsa el icono crear nos lleva a otra pagina en donde hacemos el registro de este
+
+
+
 
 ## 📌 Descripción
 
