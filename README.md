@@ -1,48 +1,28 @@
-# 💰 MoneyHomev1.1 - Sistema de Finanzas del Hogar
+💰 MoneyHome v1.1 - Sistema de Finanzas del Hogar
 
-#ajustes importantes
-
-se le hizo en la base de datos un ajuste para cambiar usuario_id por user_id
-
-ALTER TABLE movimientos CHANGE usuario_id user_id INT;
-
-actualmente lo que funciona es login/register(se agrego el mismo tema de css)/dashboard con menu hamburguesa que contiene home,movimientos y cerrar sesion
-
-dentro de movimientos tenemos el apartado crear movimiento funcionando y al momento de hacer clic en ingresos o gastos se desglozan cuales son 
-
-cuando uno pulsa el icono crear nos lleva a otra pagina en donde hacemos el registro de este
-
-
-
-
-## 📌 Descripción
-
+📌 Descripción  
 MoneyHome es una aplicación web desarrollada en Python con Flask que permite a los usuarios registrar y gestionar sus ingresos y gastos del hogar, visualizar su saldo y organizar sus movimientos mediante categorías.
 
 ---
 
-## ⚙️ Requisitos
-
+⚙️ Requisitos  
 Antes de ejecutar el sistema, asegúrate de tener instalado:
 
-* Python 3
-* MySQL Server
-* MySQL Workbench (opcional)
-* Visual Studio Code
+- Python 3  
+- MySQL Server  
+- MySQL Workbench (opcional)  
+- Visual Studio Code  
 
 ---
 
-## 🧱 Configuración de la Base de Datos
+🧱 Configuración de la Base de Datos  
 
 ### 1. Iniciar MySQL
-
-* Abrir MySQL Workbench
-* Conectarse a `Local instance MySQL80`
-* Ingresar contraseña del usuario root
+- Abrir MySQL Workbench  
+- Conectarse a Local instance MySQL80  
+- Ingresar contraseña del usuario root  
 
 ### 2. Crear la base de datos
-
-Ejecutar el siguiente script SQL:
 
 ```sql
 CREATE DATABASE moneyhome;
@@ -71,114 +51,16 @@ CREATE TABLE movimientos (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
     FOREIGN KEY (categoria_id) REFERENCES categorias(id)
 );
-```
 
-### 3. Insertar datos iniciales (opcional)
+Insertar Datos Iniciales
 
-```sql
 INSERT INTO categorias (nombre) VALUES
 ('Alimentación'),
 ('Transporte'),
 ('Ocio'),
-('Salud');
-```
+('Salud'),
+('Otros');
 
----
-
-## 🔌 Configuración del Proyecto
-
-### 1. Abrir proyecto en VS Code
-
-* Abrir la carpeta del proyecto
-
-### 2. Abrir terminal
-
-En VS Code:
-
-```
-Terminal → New Terminal
-```
-
-### 3. Instalar dependencias
-
-```bash
-pip install flask mysql-connector-python
-```
-
----
-
-## ▶️ Ejecución del Sistema
-
-### 1. Verificar conexión en `app.py`
-
-Asegurarse de que los datos coincidan con tu configuración:
-
-```python
-def get_db_connection():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="TU_PASSWORD",
-        database="moneyhome"
-    )
-```
-
----
-
-### 2. Ejecutar la aplicación
-
-En la terminal:
-
-```bash
-python app.py
-```
-
----
-
-### 3. Abrir en el navegador
-
-Ir a:
-
-```
-http://127.0.0.1:5000
-```
-
----
-
-## 🔐 Funcionalidades
-
-* Registro de usuario
-* Inicio de sesión
-* Registro de ingresos y gastos
-* Clasificación por categorías
-* Visualización de movimientos
-* Cálculo automático de saldo
-* Dashboard con resumen financiero
-
----
-
-## 🧪 Notas
-
-* MySQL debe estar en ejecución para que la aplicación funcione
-* No es necesario mantener abierto MySQL Workbench
-* Este proyecto utiliza un servidor de desarrollo (Flask)
-
----
-
-## 🚀 Estado del Proyecto
-
-Versión actual: MVP (Producto Mínimo Viable)
-
-Incluye funcionalidades básicas para la gestión de finanzas del hogar.
-
----
-
-## 👨‍💻 Autores
-
-* Daniel Neculman
-* Paula Matamala
-
----
 
 ## 📌 Observaciones
 
