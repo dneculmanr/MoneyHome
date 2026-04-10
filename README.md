@@ -1,26 +1,31 @@
-💰 MoneyHome v1.1 - Sistema de Finanzas del Hogar
+# 💰 MoneyHome - Sistema de Finanzas del Hogar
 
-📌 Descripción  
+## 📌 Descripción
+
 MoneyHome es una aplicación web desarrollada en Python con Flask que permite a los usuarios registrar y gestionar sus ingresos y gastos del hogar, visualizar su saldo y organizar sus movimientos mediante categorías.
 
 ---
 
-⚙️ Requisitos  
+## ⚙️ Requisitos
+
 Antes de ejecutar el sistema, asegúrate de tener instalado:
 
-- Python 3  
-- MySQL Server  
-- MySQL Workbench (opcional)  
-- Visual Studio Code  
+* Python 3
+* MySQL Server
+* MySQL Workbench (opcional)
+* Visual Studio Code
 
 ---
 
-🧱 Configuración de la Base de Datos  
+## 🧱 Configuración de la Base de Datos
 
 ### 1. Iniciar MySQL
-- Abrir MySQL Workbench  
-- Conectarse a Local instance MySQL80  
-- Ingresar contraseña del usuario root  
+
+* Abrir MySQL Workbench
+* Conectarse a **Local instance MySQL80**
+* Ingresar contraseña del usuario root
+
+---
 
 ### 2. Crear la base de datos
 
@@ -51,17 +56,112 @@ CREATE TABLE movimientos (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
     FOREIGN KEY (categoria_id) REFERENCES categorias(id)
 );
+```
 
-Insertar Datos Iniciales
+---
 
+### 3. Insertar datos iniciales
+
+```sql
 INSERT INTO categorias (nombre) VALUES
 ('Alimentación'),
 ('Transporte'),
 ('Ocio'),
 ('Salud'),
 ('Otros');
+```
 
+
+
+---
+
+## 🔌 Configuración del Proyecto
+
+### 1. Abrir proyecto en VS Code
+
+Abrir la carpeta del proyecto
+
+### 2. Abrir terminal
+
+Terminal → New Terminal
+
+### 3. Instalar dependencias
+
+```bash
+pip install flask mysql-connector-python
+```
+
+---
+
+## ▶️ Ejecución del Sistema
+
+### 1. Verificar conexión en app.py
+
+```python
+def get_db_connection():
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="TU_PASSWORD",
+        database="moneyhome"
+    )
+```
+
+---
+
+### 2. Ejecutar la aplicación
+
+```bash
+python app.py
+```
+
+---
+
+### 3. Abrir en el navegador
+
+[http://127.0.0.1:5000](http://127.0.0.1:5000)
+
+---
+
+## 🔐 Funcionalidades
+
+* Registro de usuario
+* Inicio de sesión
+* Registro de ingresos y gastos
+* Clasificación por categorías
+* Visualización de movimientos
+* Cálculo automático de saldo
+* Dashboard con resumen financiero
+
+---
+
+## 🧪 Notas
+
+* MySQL debe estar en ejecución
+* No es necesario mantener abierto MySQL Workbench
+* El proyecto utiliza un servidor de desarrollo (Flask)
+
+---
+
+## 🚀 Estado del Proyecto
+
+**Versión actual:** MVP (Producto Mínimo Viable)
+
+Incluye funcionalidades básicas para la gestión de finanzas del hogar.
+
+---
+
+## 👨‍💻 Autores
+
+* Daniel Neculman
+* Paula Matamala
+
+---
 
 ## 📌 Observaciones
 
 El sistema fue desarrollado con fines académicos, aplicando conceptos de desarrollo web, bases de datos relacionales y metodologías ágiles.
+
+---
+
+
