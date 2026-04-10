@@ -37,6 +37,7 @@
             <th>Tipo</th>
             <th>Monto</th>
             <th>Categoría</th>
+            <th>Descripción</th> <!-- NUEVO -->
             <th>Fecha</th>
         </tr>
     </thead>
@@ -46,6 +47,7 @@
             <td>{{ m.tipo }}</td>
             <td>${{ m.monto }}</td>
             <td>{{ m.categoria }}</td>
+            <td>{{ m.descripcion if m.descripcion else '-' }}</td> <!-- NUEVO -->
             <td>{{ m.fecha }}</td>
         </tr>
         {% endfor %}

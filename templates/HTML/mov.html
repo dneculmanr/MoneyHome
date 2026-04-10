@@ -68,32 +68,32 @@
 
     </div>
 
-    <!-- TABLA -->
-    <div class="card p-3 shadow-sm">
-        <h4>Listado</h4>
+<!-- TABLA -->
+<div class="card p-3 shadow-sm">
+    <h4>Listado</h4>
 
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Tipo</th>
-                    <th>Monto</th>
-                    <th>Categoría</th>
-                    <th>Fecha</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for m in movimientos %}
-                <tr>
-                    <td>{{ m.tipo }}</td>
-                    <td>${{ m.monto }}</td>
-                    <td>{{ m.categoria if m.categoria else 'Sin categoría' }}</td>
-                    <td>{{ m.fecha }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Tipo</th>
+                <th>Monto</th>
+                <th>Categoría</th>
+                <th>Descripción</th> <!-- NUEVO -->
+                <th>Fecha</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in movimientos %}
+            <tr>
+                <td>{{ m.tipo }}</td>
+                <td>${{ m.monto }}</td>
+                <td>{{ m.categoria if m.categoria else 'Sin categoría' }}</td>
+                <td>{{ m.descripcion if m.descripcion else '-' }}</td> <!-- NUEVO -->
+                <td>{{ m.fecha }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
 </div>
 
