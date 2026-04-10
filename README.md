@@ -58,7 +58,7 @@ CREATE TABLE movimientos (
 );
 ```
 
-### 3. Insertar datos iniciales (opcional)
+### 3. Insertar datos iniciales 
 
 ```sql
 INSERT INTO categorias (nombre) VALUES
