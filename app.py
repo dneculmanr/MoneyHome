@@ -1,10 +1,14 @@
-from flask import Flask, render_template, request, redirect, session
+print("🔥 APP CORRECTA EJECUTÁNDOSE")
+
+from flask import Flask, render_template, request, redirect, session, url_for
 import mysql.connector
-#rutas
-app = Flask(__name__, template_folder='templates/HTML', static_folder='templates/static')
+
+app = Flask(__name__, template_folder='templates/HTML', static_folder='static')
 app.secret_key = "secretkey"
 
-# Conexión MySQL
+# ======================
+# CONEXIÓN
+# ======================
 def get_db_connection():
     return mysql.connector.connect(
         host="localhost",
@@ -13,63 +17,136 @@ def get_db_connection():
         database="moneyhome"
     )
 
-# HOME
+# ======================
+# HOME (DASHBOARD)
+# ======================
 @app.route("/")
-def index():
-    if "user_id" in session:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+def home():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
 
-        # Obtener movimientos
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Movimientos
+    cursor.execute("""
+        SELECT m.*, c.nombre as categoria
+        FROM movimientos m
+        LEFT JOIN categorias c ON m.categoria_id = c.id
+        WHERE m.user_id = %s
+        ORDER BY m.fecha DESC
+    """, (session["user_id"],))
+
+    movimientos = cursor.fetchall()
+
+    # Resumen
+    cursor.execute("""
+        SELECT 
+            SUM(CASE WHEN tipo='ingreso' THEN monto ELSE 0 END) as ingresos,
+            SUM(CASE WHEN tipo='gasto' THEN monto ELSE 0 END) as gastos
+        FROM movimientos
+        WHERE user_id = %s
+    """, (session["user_id"],))
+
+    resumen = cursor.fetchone()
+
+    ingresos = resumen["ingresos"] or 0
+    gastos = resumen["gastos"] or 0
+    saldo = ingresos - gastos
+
+    conn.close()
+
+    return render_template("dashboard.html",
+                           movimientos=movimientos,
+                           ingresos=ingresos,
+                           gastos=gastos,
+                           saldo=saldo)
+
+# ======================
+# MOVIMIENTOS
+# ======================
+@app.route("/movimientos")
+def movimientos():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    tipo = request.args.get("tipo")
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    if tipo:
         cursor.execute("""
-            SELECT * FROM movimientos 
-            WHERE usuario_id = %s
+            SELECT m.*, c.nombre as categoria
+            FROM movimientos m
+            LEFT JOIN categorias c ON m.categoria_id = c.id
+            WHERE m.user_id = %s AND m.tipo = %s
+        """, (session["user_id"], tipo))
+    else:
+        cursor.execute("""
+            SELECT m.*, c.nombre as categoria
+            FROM movimientos m
+            LEFT JOIN categorias c ON m.categoria_id = c.id
+            WHERE m.user_id = %s
         """, (session["user_id"],))
 
-        movimientos = cursor.fetchall()
+    movimientos = cursor.fetchall()
+    conn.close()
 
-        # Calcular totales
-        ingresos = sum(m["monto"] for m in movimientos if m["tipo"] == "ingreso")
-        gastos = sum(m["monto"] for m in movimientos if m["tipo"] == "gasto")
-        saldo = ingresos - gastos
+    return render_template("mov.html", movimientos=movimientos)
 
-        conn.close()
+# ======================
+# FORM CREAR
+# ======================
+@app.route("/crear")
+def crear():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
 
-        return render_template(
-            "index.html",
-            user_id=session["user_id"],
-            movimientos=movimientos,
-            ingresos=ingresos,
-            gastos=gastos,
-            saldo=saldo
-        )
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
 
-    return redirect("/login")
+    cursor.execute("SELECT * FROM categorias")
+    categorias = cursor.fetchall()
 
-# REGISTER
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    if request.method == "POST":
-        nombre = request.form["nombre"]
-        email = request.form["email"]
-        password = request.form["password"]
+    conn.close()
+
+    return render_template("crear_movimiento.html", categorias=categorias)
+
+# ======================
+# GUARDAR MOVIMIENTO
+# ======================
+@app.route("/crear_movimiento", methods=["POST"])
+def crear_movimiento():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    try:
+        tipo = request.form["tipo"]
+        monto = request.form["monto"]
+        categoria_id = request.form["categoria"]
+        fecha = request.form["fecha"]
+        descripcion = request.form["descripcion"]
 
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        cursor.execute(
-            "INSERT INTO usuarios (nombre, email, password) VALUES (%s, %s, %s)",
-            (nombre, email, password)
-        )
+        cursor.execute("""
+            INSERT INTO movimientos (user_id, tipo, monto, categoria_id, fecha, descripcion)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (session["user_id"], tipo, monto, categoria_id, fecha, descripcion))
 
         conn.commit()
         conn.close()
 
-        return redirect("/login")
+        return redirect(url_for("home"))
 
-    return render_template("register.html")
+    except Exception as e:
+        return f"Error al guardar movimiento: {e}"
 
+# ======================
 # LOGIN
+# ======================
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -89,74 +166,55 @@ def login():
 
         if user:
             session["user_id"] = user["id"]
-            return redirect("/")
+            return redirect(url_for("home"))
         else:
-            return "Credenciales incorrectas"
+            return render_template("login.html", error="Credenciales incorrectas")
 
     return render_template("login.html")
 
+# ======================
+# REGISTER
+# ======================
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        nombre = request.form["nombre"]
+        email = request.form["email"]
+        password = request.form["password"]
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "INSERT INTO usuarios (nombre, email, password) VALUES (%s, %s, %s)",
+            (nombre, email, password)
+        )
+
+        conn.commit()
+        conn.close()
+
+        return redirect(url_for("login"))
+
+    return render_template("register.html")
+
+# ======================
 # LOGOUT
+# ======================
 @app.route("/logout")
 def logout():
     session.clear()
-    return redirect("/login")
+    return redirect(url_for("login"))
 
-# TEST DB
-@app.route("/test-db")
-def test_db():
-    try:
-        conn = get_db_connection()
-        conn.close()
-        return "✅ Conexión a MySQL OK"
-    except Exception as e:
-        return str(e)
-# RUTAS DE PRUEBA
-# DASHBOARD
-@app.route("/dashboard")
-def dashboard():
-    if "user_id" not in session:
-        return redirect("/login")
+# ======================
+# RESET
+# ======================
+@app.route("/reset")
+def reset():
+    session.clear()
+    return "Sesión limpiada"
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    user_id = session["user_id"]
-
-    # Obtener movimientos
-    cursor.execute("""
-        SELECT m.*, c.nombre AS categoria
-        FROM movimientos m
-        LEFT JOIN categorias c ON m.categoria_id = c.id
-        WHERE m.usuario_id = %s
-        ORDER BY m.fecha DESC
-    """, (user_id,))
-    movimientos = cursor.fetchall()
-
-    # Totales
-    cursor.execute("""
-        SELECT 
-            SUM(CASE WHEN tipo='ingreso' THEN monto ELSE 0 END) AS ingresos,
-            SUM(CASE WHEN tipo='gasto' THEN monto ELSE 0 END) AS gastos
-        FROM movimientos
-        WHERE usuario_id = %s
-    """, (user_id,))
-    totales = cursor.fetchone()
-
-    ingresos = totales["ingresos"] or 0
-    gastos = totales["gastos"] or 0
-    saldo = ingresos - gastos
-
-    conn.close()
-
-    return render_template("dashboard.html",
-                           movimientos=movimientos,
-                           ingresos=ingresos,
-                           gastos=gastos,
-                           saldo=saldo)
-# llamado a la ruta de movimientos, aún no implementada, pero se muestra el template
-@app.route("/mov")
-def mov():
-    return render_template("mov.html")
-
+# ======================
+# RUN
+# ======================
 if __name__ == "__main__":
-    app.run(debug=True)    
+    app.run(debug=True)

@@ -22,12 +22,12 @@ Antes de ejecutar el sistema, asegúrate de tener instalado:
 ### 1. Iniciar MySQL
 
 * Abrir MySQL Workbench
-* Conectarse a `Local instance MySQL80`
+* Conectarse a **Local instance MySQL80**
 * Ingresar contraseña del usuario root
 
-### 2. Crear la base de datos
+---
 
-Ejecutar el siguiente script SQL:
+### 2. Crear la base de datos
 
 ```sql
 CREATE DATABASE moneyhome;
@@ -58,15 +58,20 @@ CREATE TABLE movimientos (
 );
 ```
 
-### 3. Insertar datos iniciales (opcional)
+---
+
+### 3. Insertar datos iniciales
 
 ```sql
 INSERT INTO categorias (nombre) VALUES
 ('Alimentación'),
 ('Transporte'),
 ('Ocio'),
-('Salud');
+('Salud'),
+('Otros');
 ```
+
+
 
 ---
 
@@ -74,15 +79,11 @@ INSERT INTO categorias (nombre) VALUES
 
 ### 1. Abrir proyecto en VS Code
 
-* Abrir la carpeta del proyecto
+Abrir la carpeta del proyecto
 
 ### 2. Abrir terminal
 
-En VS Code:
-
-```
 Terminal → New Terminal
-```
 
 ### 3. Instalar dependencias
 
@@ -94,9 +95,7 @@ pip install flask mysql-connector-python
 
 ## ▶️ Ejecución del Sistema
 
-### 1. Verificar conexión en `app.py`
-
-Asegurarse de que los datos coincidan con tu configuración:
+### 1. Verificar conexión en app.py
 
 ```python
 def get_db_connection():
@@ -112,8 +111,6 @@ def get_db_connection():
 
 ### 2. Ejecutar la aplicación
 
-En la terminal:
-
 ```bash
 python app.py
 ```
@@ -122,11 +119,7 @@ python app.py
 
 ### 3. Abrir en el navegador
 
-Ir a:
-
-```
-http://127.0.0.1:5000
-```
+[http://127.0.0.1:5000](http://127.0.0.1:5000)
 
 ---
 
@@ -144,15 +137,15 @@ http://127.0.0.1:5000
 
 ## 🧪 Notas
 
-* MySQL debe estar en ejecución para que la aplicación funcione
+* MySQL debe estar en ejecución
 * No es necesario mantener abierto MySQL Workbench
-* Este proyecto utiliza un servidor de desarrollo (Flask)
+* El proyecto utiliza un servidor de desarrollo (Flask)
 
 ---
 
 ## 🚀 Estado del Proyecto
 
-Versión actual: MVP (Producto Mínimo Viable)
+**Versión actual:** MVP (Producto Mínimo Viable)
 
 Incluye funcionalidades básicas para la gestión de finanzas del hogar.
 
@@ -168,3 +161,7 @@ Incluye funcionalidades básicas para la gestión de finanzas del hogar.
 ## 📌 Observaciones
 
 El sistema fue desarrollado con fines académicos, aplicando conceptos de desarrollo web, bases de datos relacionales y metodologías ágiles.
+
+---
+
+

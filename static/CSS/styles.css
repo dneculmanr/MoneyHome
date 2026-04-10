@@ -1,0 +1,104 @@
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+/* ===== BODY ===== */
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== HEADER ===== */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #f8b26a;
+  padding: 10px 20px;
+  position: relative;
+}
+
+/* ===== LOGO ===== */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-image {
+  width: 50px;
+  height: 50px;
+}
+
+.logo h1 {
+  font-size: 1.3rem;
+  color: white;
+  margin: 0;
+}
+
+/* ===== BOTÓN MENÚ ===== */
+.menu-toggle {
+  font-size: 1.8rem;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+/* ===== NAV MENU ===== */
+.nav-menu {
+  display: none;
+  flex-direction: column;
+  position: absolute;
+  top: 60px;
+  left: 0;
+  background-color: #f8b26a;
+  width: 220px;
+  padding: 10px;
+  z-index: 1000;
+}
+
+.nav-menu a {
+  text-decoration: none;
+  color: black;
+  padding: 8px;
+}
+
+.nav-menu a:hover {
+  background-color: #e29c55;
+}
+
+/* ACTIVO */
+.nav-menu.active {
+  display: flex; 
+}
+
+/* ===== USER SECTION ===== */
+.user-section {
+  background-color: #d3bfbf;
+  padding: 5px 20px;
+  text-align: right;
+}
+
+/* ===== FOOTER ===== */
+.site-footer {
+  margin-top: auto;
+  background-color: #f8b26a;
+  padding: 20px;
+}
+
+/* ===== FIX BOOTSTRAP ===== */
+.container {
+  max-width: 1200px;
+}
+
+/* ===== CARDS ===== */
+.card {
+  border-radius: 10px;
+}
+
+/* ===== TABLA ===== */
+table {
+  margin-top: 10px;
+}

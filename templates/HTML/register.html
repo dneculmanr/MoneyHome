@@ -1,11 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <title>Registro</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/styles.css') }}">
 </head>
+
 <body class="bg-light">
 
 <div class="container d-flex justify-content-center align-items-center vh-100">
@@ -14,11 +16,13 @@
         <h3 class="text-center mb-3">Registro</h3>
 
         <form method="POST">
-            <input class="form-control mb-2" type="text" name="nombre" placeholder="Nombre">
-            <input class="form-control mb-2" type="email" name="email" placeholder="Email">
-            <input class="form-control mb-3" type="password" name="password" placeholder="Password">
+            <input class="form-control mb-2" type="text" name="nombre" placeholder="Nombre" required>
+            <input class="form-control mb-2" type="email" name="email" placeholder="Email" required>
+            <input class="form-control mb-3" type="password" name="password" placeholder="Password" required>
 
-            <button class="btn btn-success w-100">Registrarse</button>
+            <button class="btn w-100" style="background-color:#f8b26a; color:white;">
+                Registrarse
+            </button>
         </form>
 
         <a href="/login" class="text-center mt-3">Volver al login</a>
