@@ -295,13 +295,15 @@ def editar_movimiento(id):
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    categoria_id = request.form.get("categoria_id")
+
     cursor.execute(
         """
         UPDATE movimientos
-        SET descripcion = %s, monto = %s
+        SET descripcion = %s, monto = %s, categoria_id = %s
         WHERE id = %s AND usuario_id = %s
         """,
-        (descripcion, monto, id, session["user_id"])
+        (descripcion, monto, categoria_id, id, session["user_id"])
     )
 
     conn.commit()
