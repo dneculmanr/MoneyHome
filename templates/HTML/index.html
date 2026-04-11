@@ -15,11 +15,9 @@ min-vh-100: establece la altura mínima al 100% de la ventana gráfica -->
 <main class="flex-grow-1">
 
     {% include 'header.html' %}
-<!--container-fluid: crea un contenedor que se extiende al 100% del ancho de la pantalla; 
-mt-4: agrega un margen superior de 1rem; 
-px-2 px-md-3: agrega relleno horizontal -->
+
 <div class="container-fluid mt-4 px-2 px-md-3">
-    <!--row: crea una fila de elementos -->
+    
     <div class="row justify-content-center">
         <div class="col-12">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -69,6 +67,7 @@ px-2 px-md-3: agrega relleno horizontal -->
                 <table class="table table-striped">
                     <thead class="table-dark">
                         <tr>
+                            <TH>Nombre</TH>
                             <th>Tipo</th>
                             <th>Monto</th>
                             <th>Fecha</th>
@@ -78,6 +77,7 @@ px-2 px-md-3: agrega relleno horizontal -->
                     <tbody>
                         {% for m in movimientos %}
                         <tr>
+                            <td>{{ m.descripcion }}</td>
                             <td>
                                 {% if m.tipo == 'ingreso' %}
                                     <span class="badge bg-success">Ingreso</span>
@@ -102,5 +102,7 @@ px-2 px-md-3: agrega relleno horizontal -->
 </div>
 </main>
 {% include 'footer.html' %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

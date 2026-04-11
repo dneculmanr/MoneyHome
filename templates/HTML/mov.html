@@ -60,12 +60,14 @@
     </form>
     {%else%}
     <!-- Si no es la vista de creación, mostrar la tabla de movimientos (PENDIENTE CUADRAR PANTALLA) -->
-        <table>
+        <table class="table table-striped table-hover align-middle">
             <thead>
                 <tr>
                     <th class="col">Descripción</th>
                     <th class="col">Categoria</th>
                     <th class="col">Monto</th>
+                    <!-- fALTA HACER EL overlay, que tenga modificar o eliminar -->
+                    <th class="col">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -74,6 +76,11 @@
                     <td>{{ movimiento.descripcion }}</td>
                     <td>{{ movimiento.categoria }}</td>
                     <td>${{ "%.2f"|format(movimiento.monto) }}</td>
+                    <td>
+                        <a href="/mov/editar/{{ movimiento.id }}" class="btn btn-sm btn-outline-primary">
+                            Editar
+                        </a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
