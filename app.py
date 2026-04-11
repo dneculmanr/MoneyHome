@@ -252,6 +252,14 @@ def mov(tipo=None):
             ORDER BY m.fecha DESC
         """, (session["user_id"],))
         movimientos = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT id, nombre
+        FROM categorias
+        ORDER BY nombre
+    """)
+    categorias = cursor.fetchall()
+
     conn.close()
 
     selected_label = opciones[tipo]["label"] if tipo else "Movimientos"
@@ -263,7 +271,8 @@ def mov(tipo=None):
         selected_key=tipo,
         selected_label=selected_label,
         descripcion=descripcion,
-        movimientos=movimientos
+        movimientos=movimientos,
+        categorias=categorias
     )
 
 

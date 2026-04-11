@@ -8,55 +8,80 @@
     <script src="/static/JavaScript/main.js" defer></script>
     <title>Document</title>
 </head>
-<body>
+<body class="bg-light d-flex flex-column min-vh-100">
+
     {% include 'header.html' %}
         {% include 'basemov.html' %}
     <!-- cONTENIDO DE MOVIMEINTOS -->
+    <div class="container-fluid px-2 px-sm-3 px-md-4 px-lg-5"> <!-- cuadrar contenido responsive -->
     <h3>{{ selected_label }}</h3>
     <p>{{ descripcion }}</p>
 
+    <!--Crear movimiento-->
     {% if selected_key == 'crear' %}
-    <!--Formulario de creación de movimiento-->
-    <!--Tipo de movimiento-->
-        <select id="tipo_movimiento" name="tipo_movimiento" class="form-select" required>
-        <option value="">Selecciona una opción</option>
-        <option value="ingreso">Ingreso</option>
-        <option value="gasto">Gasto</option>
-        <!--cambiar tipo para traer dato de la BD (PEDIENTE ID 1 Y 2 (ING Y EGRESO))-->
-        <input type="text" id="descripcion" name="descripcion" class="form-control mt-2" placeholder="Descripción" required>
-        <input type="number" id="monto" name="monto" class="form-control mt-2" placeholder="Monto" step="0.01" required>
-        <select id="categoria_id" name="categoria_id" class="form-select mt-2" required>
-            <option value="">Selecciona una categoría</option>
-            {% for categoria in categorias %}
-                <option value="{{ categoria.id }}">{{ categoria.nombre }}</option>
-            {% endfor %}
-        </select>
-        <button type="submit" class="btn btn-primary mt-3">Crear Movimiento</button>
+    <form method="POST" action="/mov/crear" class="mb-4">
+        <div class="row g-3">
+
+            <div class="col-12">
+                <label for="descripcion" class="form-label">Descripción</label>
+                <input id="descripcion" name="descripcion" type="text" class="form-control" required>
+            </div>
+
+            <div class="col-md-4">
+                <label for="tipo_movimiento" class="form-label">Tipo de movimiento</label>
+                <select id="tipo_movimiento" name="tipo_movimiento" class="form-select" required>
+                    <option value="">Selecciona una opción</option>
+                    <option value="ingreso">Ingreso</option>
+                    <option value="gasto">Gasto</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label for="monto" class="form-label">Monto</label>
+                <input id="monto" name="monto" type="number" class="form-control" min="1" step="0.01" required>
+            </div>
+
+            <div class="col-md-4">
+                <label for="categoria_id" class="form-label">Categoría</label>
+                <select id="categoria_id" name="categoria_id" class="form-select" required>
+                <option value="">Selecciona una categoría</option>
+                {% for categoria in categorias %}
+                    <option value="{{ categoria.id }}">{{ categoria.nombre }}</option>
+                {% endfor %}
+                </select>
+            </div>
 
 
 
-</select>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">Crear Movimiento</button>
+            </div>
+        </div>
+    </form>
     {%else%}
+    <!-- Si no es la vista de creación, mostrar la tabla de movimientos (PENDIENTE CUADRAR PANTALLA) -->
         <table>
             <thead>
                 <tr>
-                    <th>Descripción</th>
-                    <th>Monto</th>
-                    <th>Fecha</th>
+                    <th class="col">Descripción</th>
+                    <th class="col">Categoria</th>
+                    <th class="col">Monto</th>
                 </tr>
             </thead>
             <tbody>
                 {% for movimiento in movimientos %}
                 <tr>
                     <td>{{ movimiento.descripcion }}</td>
+                    <td>{{ movimiento.categoria }}</td>
                     <td>${{ "%.2f"|format(movimiento.monto) }}</td>
-                    <td>{{ movimiento.fecha }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
             {% endif %}
+    </div>
 
-    {% include 'footer.html' %}
+    
 </body>
+    {% include 'footer.html' %}
 </html>

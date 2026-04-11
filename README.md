@@ -48,14 +48,21 @@ CREATE TABLE categorias (
 CREATE TABLE movimientos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT,
-    tipo ENUM('ingreso','gasto'),
     monto DECIMAL(10,2),
     categoria_id INT,
     fecha DATE,
     descripcion TEXT,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
     FOREIGN KEY (categoria_id) REFERENCES categorias(id)
+    FOREIGN KEY (tipo_movimiento_id) REFERENCES tipo_movimientos(id)
 );
+
+CREATE TABLE tipo_movimiento (
+    id INT AUTO_INCREMENTAL PRIMARY KEY,
+    nombre VARCHAR (20),
+    tipo NUMBER
+);
+
 ```
 
 ### 3. Insertar datos iniciales 
@@ -66,6 +73,11 @@ INSERT INTO categorias (nombre) VALUES
 ('Transporte'),
 ('Ocio'),
 ('Salud');
+
+INSERT INTO tipo_movimiento (nombre,tipo) VALUES
+('Ingreso', 1),
+('Egreso',2),
+('Traspaso',3);
 ```
 
 ---
