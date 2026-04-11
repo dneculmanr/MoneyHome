@@ -275,7 +275,42 @@ def mov(tipo=None):
         categorias=categorias
     )
 
+#Guardar cambios del Modal de edición de movimiento
+@app.route("/mov/editar/<int:id>", methods=["POST"])
+def editar_movimiento(id):
+    if "user_id" not in session:
+        return redirect("/login")
+
+    descripcion = request.form.get("descripcion", "").strip()
+    monto_raw = request.form.get("monto", "").strip()
+
+    try:
+        monto = float(monto_raw)
+    except ValueError:
+        return redirect("/mov")
+
+    if monto <= 0:
+        return redirect("/mov")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        UPDATE movimientos
+        SET descripcion = %s, monto = %s
+        WHERE id = %s AND usuario_id = %s
+        """,
+        (descripcion, monto, id, session["user_id"])
+    )
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/mov")
 
 
 if __name__ == "__main__":
     app.run(debug=True)    
+
+
