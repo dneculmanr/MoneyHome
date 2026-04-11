@@ -11,7 +11,33 @@
 <body>
     {% include 'header.html' %}
         {% include 'basemov.html' %}
+    <!-- cONTENIDO DE MOVIMEINTOS -->
+    <h3>{{ selected_label }}</h3>
+    <p>{{ descripcion }}</p>
 
-    
+    {% if selected_key == 'ingresos' %}
+        <div>Formulario ingreso</div>
+    {%else%}
+        <table>
+            <thead>
+                <tr>
+                    <th>Descripción</th>
+                    <th>Monto</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for movimiento in movimientos %}
+                <tr>
+                    <td>{{ movimiento.descripcion }}</td>
+                    <td>${{ "%.2f"|format(movimiento.monto) }}</td>
+                    <td>{{ movimiento.fecha }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+            {% endif %}
+
+    {% include 'footer.html' %}
 </body>
 </html>

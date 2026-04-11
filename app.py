@@ -153,10 +153,83 @@ def dashboard():
                            ingresos=ingresos,
                            gastos=gastos,
                            saldo=saldo)
-# llamado a la ruta de movimientos, aún no implementada, pero se muestra el template
+
+@app.route("/perfil")
+def perfil():
+    if "user_id" not in session:
+        return redirect("/login")
+    return render_template("perfil.html")
+
+# llamado a la ruta de movimientos, aún no implementada, pero se muestra el template DETALLAR COMPORTAMIENTO DE LA RUTA DE MOVIMIENTOS, SE MUESTRA EL TEMPLATE CON LOS MOVIMIENTOS CORRESPONDIENTES A CADA TIPO DE MOVIMIENTO
 @app.route("/mov")
-def mov():
-    return render_template("mov.html")
+@app.route("/mov/<tipo>")
+
+def mov(tipo=None):
+    # Verificar si el usuario está autenticado, sino redirige al login.
+    if "user_id" not in session:
+        return redirect("/login")
+
+    # db_tipo: valor buscado en la BD (para filtrar el movimiento).
+    # label: texto que mostrara en la pantalla.
+    # descripcion: texto para la vista (descripción de lo que se muestra en la pantalla).
+    opciones = {
+        "ingresos": {"db_tipo":"ingreso", "label":"Ingresos","descripcion":"lista de ingresos"},
+        "gastos": {"db_tipo":"gasto", "label":"Gastos","descripcion":"lista de gastos"},
+        "transferencias": {"db_tipo":"transferencia", "label":"Transferencias","descripcion":"lista de transferencias"},
+        "crear": {"db_tipo":None, "label":"Crear Movimiento","descripcion":"Formulario para crear un nuevo movimiento"}
+    }
+
+    # Si el tipo no esta en las op. redirige a /mov.
+    if tipo and tipo not in opciones:
+        return redirect("/mov")
+    
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    #Si el tipo de movimento no esta vacio y tiene un valor en la BD, en tonces se realiza la consulta:
+        # * traer filas de movimientos 
+        # * unir con categorias para obtener el nombre de la categoría
+        # * filtrar por usuario_id
+        # * filtrar por tipo
+        # * ordenar por fecha descendente
+
+    if tipo and opciones[tipo]["db_tipo"]:
+        cursor.execute("""
+            SELECT 
+                m.*, 
+                c.nombre AS categoria
+            FROM movimientos m
+            LEFT JOIN categorias c ON m.categoria_id = c.id
+            WHERE m.usuario_id = %s AND m.tipo = %s
+            ORDER BY m.fecha DESC
+        """, (session["user_id"], opciones[tipo]["db_tipo"]))
+        movimientos = cursor.fetchall()
+    else:
+        cursor.execute("""
+            SELECT 
+                m.*, 
+                c.nombre AS categoria
+            FROM movimientos m
+            LEFT JOIN categorias c ON m.categoria_id = c.id
+            WHERE m.usuario_id = %s
+            ORDER BY m.fecha DESC
+        """, (session["user_id"],))
+        movimientos = cursor.fetchall()
+    conn.close()
+
+    selected_label = opciones[tipo]["label"] if tipo else "Movimientos"
+    descripcion = opciones[tipo]["descripcion"] if tipo else "selecciona una opcion"
+    
+
+    return render_template(
+        "mov.html",
+        selected_key=tipo,
+        selected_label=selected_label,
+        descripcion=descripcion,
+        movimientos=movimientos
+    )
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)    

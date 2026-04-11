@@ -8,15 +8,23 @@
     <script src="/static/JavaScript/main.js" defer></script>
 
 </head>
-<body class="bg-light">
-
-<div >
+<!--bg-light: pone un fondo blanco; 
+min-vh-100: establece la altura mínima al 100% de la ventana gráfica -->
+<body class="bg-light d-flex flex-column min-vh-100">
+<!-- flex-grow-1: hace que el elemento principal crezca para ocupar el espacio disponible entre el header y el footer -->
+<main class="flex-grow-1">
 
     {% include 'header.html' %}
-
+<!--container-fluid: crea un contenedor que se extiende al 100% del ancho de la pantalla; 
+mt-4: agrega un margen superior de 1rem; 
+px-2 px-md-3: agrega relleno horizontal -->
+<div class="container-fluid mt-4 px-2 px-md-3">
+    <!--row: crea una fila de elementos -->
+    <div class="row justify-content-center">
+        <div class="col-12">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>💰 MoneyHome</h2>
-        <a href="/logout" class="btn btn-danger">Cerrar sesión</a>
+
     </div>
 
     <!-- RESUMEN -->
@@ -57,37 +65,42 @@
 
             <h4 class="mb-3">Movimientos</h4>
 
-            <table class="table table-striped">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Tipo</th>
-                        <th>Monto</th>
-                        <th>Fecha</th>
-                    </tr>
-                </thead>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Monto</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
 
-                <tbody>
-                    {% for m in movimientos %}
-                    <tr>
-                        <td>
-                            {% if m.tipo == 'ingreso' %}
-                                <span class="badge bg-success">Ingreso</span>
-                            {% else %}
-                                <span class="badge bg-danger">Gasto</span>
-                            {% endif %}
-                        </td>
-                        <td>${{ m.monto }}</td>
-                        <td>{{ m.fecha }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
+                    <tbody>
+                        {% for m in movimientos %}
+                        <tr>
+                            <td>
+                                {% if m.tipo == 'ingreso' %}
+                                    <span class="badge bg-success">Ingreso</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Gasto</span>
+                                {% endif %}
+                            </td>
+                            <td>${{ m.monto }}</td>
+                            <td>{{ m.fecha }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
 
-            </table>
+                </table>
+            </div>
 
         </div>
     </div>
 
+        </div>
+    </div>
 </div>
+</main>
 {% include 'footer.html' %}
 </body>
 </html>
