@@ -161,8 +161,8 @@ def perfil():
     return render_template("perfil.html")
 
 # llamado a la ruta de movimientos, aún no implementada, pero se muestra el template DETALLAR COMPORTAMIENTO DE LA RUTA DE MOVIMIENTOS, SE MUESTRA EL TEMPLATE CON LOS MOVIMIENTOS CORRESPONDIENTES A CADA TIPO DE MOVIMIENTO
-@app.route("/mov")
-@app.route("/mov/<tipo>")
+@app.route("/mov", methods=["GET", "POST"])
+@app.route("/mov/<tipo>", methods=["GET", "POST"])
 
 def mov(tipo=None):
     # Verificar si el usuario está autenticado, sino redirige al login.
@@ -182,6 +182,43 @@ def mov(tipo=None):
     # Si el tipo no esta en las op. redirige a /mov.
     if tipo and tipo not in opciones:
         return redirect("/mov")
+    
+#CREAR MOV.
+    if tipo == "crear" and request.method == "POST":
+        tipo_movimiento = request.form.get("tipo_movimiento", "").strip().lower()
+        descripcion = request.form.get("descripcion", "").strip()
+        monto_raw = request.form.get("monto", "").strip()
+        categoria_id = request.form.get("categoria_id")
+
+        if tipo_movimiento not in ["ingreso", "gasto"]:
+            return redirect("/mov/crear")
+    
+        try:
+            monto = float(monto_raw)
+        except ValueError:
+            return redirect("/mov/crear")
+    
+        if monto <= 0:
+            return redirect("/mov/crear")
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+                """
+                INSERT INTO movimientos (usuario_id, monto, categoria_id, descripcion, tipo)
+                VALUES (%s, %s, %s, %s, %s)
+                """,
+            (session["user_id"], monto, categoria_id, descripcion, tipo_movimiento))
+
+        conn.commit()
+        conn.close()
+
+
+        return redirect("/mov/ingresos" if tipo_movimiento == "ingreso" else "/mov/gastos")
+
+
+
+
     
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
