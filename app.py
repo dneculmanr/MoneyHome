@@ -274,29 +274,30 @@ def mov(tipo=None):
         movimientos=movimientos,
         categorias=categorias
     )
-
-#Guardar cambios del Modal de edición de movimiento
+#MODAL EDITAR MOVIMIENTO
+#Funcion del boton "Modificar".
 @app.route("/mov/editar/<int:id>", methods=["POST"])
 def editar_movimiento(id):
     if "user_id" not in session:
         return redirect("/login")
-
+    # Obtener datos del formulario (NOMBRE, MONTO, CATEGORIA); strip()=quita espacio al inicio y al final.
     descripcion = request.form.get("descripcion", "").strip()
     monto_raw = request.form.get("monto", "").strip()
+    categoria_id = request.form.get("categoria_id")
 
+    # Validar monto numerico.
     try:
         monto = float(monto_raw)
     except ValueError:
-        return redirect("/mov")
-
+        return "Debe ingresar un monto válido"
+    # Validar monto positivo.
     if monto <= 0:
-        return redirect("/mov")
+        return "Debe ingresar un monto positivo"
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    categoria_id = request.form.get("categoria_id")
-
+    #Actializa nombre, monto y categoria del movimiento con el id especificado, solo si el movimiento pertenece al usuario autenticado.
     cursor.execute(
         """
         UPDATE movimientos
@@ -311,6 +312,29 @@ def editar_movimiento(id):
 
     return redirect("/mov")
 
+
+#Funcion del boton "Eliminar".
+@app.route("/mov/eliminar/<int:id>", methods=["POST"])
+def eliminar_movimiento(id):
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    #Elimina el movimiento con el id especificado, solo si el movimiento pertenece al usuario autenticado.
+    cursor.execute(
+        """
+        DELETE FROM movimientos
+        WHERE id = %s AND usuario_id = %s
+        """,
+        (id, session["user_id"])
+    )
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/mov")
 
 if __name__ == "__main__":
     app.run(debug=True)    

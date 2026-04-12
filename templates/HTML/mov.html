@@ -108,7 +108,6 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-            <p id="modal_mov_id" class="d-none">Nombre</p>
 
         <!-- Datos del modal editar -->
             Nombre
@@ -135,11 +134,45 @@
             <input id="edit_monto" name="monto" type="number" step="0.01" class="form-control">
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-primary">Eliminar</button>
-            <button type="submit" class="btn btn-secondary" data-bs-dismiss="modal">Guardar</button>
+        <!-- Botones del Modal editar
+        * toggle= que componentes de bootstrap se utilizara.
+        * dimiss= cerrar componente.
+        * target= que componente se va a activar.-->
+        
+        <!-- Boton de eliminar, que se encuentra dentro del modal editar, para eliminar el movimiento. -->
+                <button
+                    type="button" 
+                    class="btn btn-danger" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#modalEliminar">
+                    Eliminar
+                </button>
+                <button type="submit" class="btn btn-secondary">Guardar</button>
         </div>
         </form>
     </div>
+    </div>
+
+    <!--MODAL-Boton Eliminar-->
+    <div class="modal fade" id="modalEliminar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <form id="formEliminar" method="POST" class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Eliminar movimiento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+
+                <!-- Datos del modal Eliminar -->
+                    <p>¿Estás seguro de que deseas eliminar este movimiento?</p>
+                    <input type="hidden" id="delete_movimiento_id" name="movimiento_id">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     {% include 'footer.html' %}
