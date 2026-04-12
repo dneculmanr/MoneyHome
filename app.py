@@ -153,12 +153,20 @@ def dashboard():
                            ingresos=ingresos,
                            gastos=gastos,
                            saldo=saldo)
-
+#Ruta Flask para el perfil del usuario.
 @app.route("/perfil")
 def perfil():
     if "user_id" not in session:
         return redirect("/login")
     return render_template("perfil.html")
+
+#Ruta Flask para las categorias.
+@app.route("/categorias")
+def categorias():
+    if "user_id" not in session:
+        return redirect("/login")
+    return render_template("categorias.html")
+    
 
 # llamado a la ruta de movimientos, aún no implementada, pero se muestra el template DETALLAR COMPORTAMIENTO DE LA RUTA DE MOVIMIENTOS, SE MUESTRA EL TEMPLATE CON LOS MOVIMIENTOS CORRESPONDIENTES A CADA TIPO DE MOVIMIENTO
 @app.route("/mov", methods=["GET", "POST"])
