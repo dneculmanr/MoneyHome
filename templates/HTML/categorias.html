@@ -47,7 +47,10 @@
             <li class="list-group-item d-flex justify-content-between align-items-center">
                 {{ categoria.nombre }}
                 <form method="POST" action="/categorias/eliminar/{{ categoria.id }}" onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta categoría?');">
-                    <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+
+                    <!--Ingresar modal en el boton editar (copiar a mov)-->
+
+                    <button type="submit" class="btn btn-danger btn-sm">Editar</button>
                 </form>
             </li>
             {% endfor %}
