@@ -77,7 +77,6 @@ INSERT INTO categorias (nombre) VALUES
 INSERT INTO tipo_movimiento (nombre,tipo) VALUES
 ('Ingreso', 1),
 ('Egreso',2),
-('Traspaso',3);
 ```
 
 ---
