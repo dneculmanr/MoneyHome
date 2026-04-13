@@ -160,13 +160,51 @@ def perfil():
         return redirect("/login")
     return render_template("perfil.html")
 
+#Categorias.
+
 #Ruta Flask para las categorias.
 @app.route("/categorias")
 def categorias():
     if "user_id" not in session:
         return redirect("/login")
-    return render_template("categorias.html")
-    
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT id, nombre
+        FROM categorias
+        ORDER BY nombre
+    """)
+    categorias = cursor.fetchall()
+
+    conn.close()
+
+    return render_template("categorias.html", categorias=categorias)
+
+#MODAL CREAR CATEGORIAS
+@app.route("/categorias/crear", methods=["POST"])
+def crear_categoria():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    nombre = request.form.get("nombre", "").strip()
+
+    if not nombre:
+        return redirect("/categorias")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    #Inserta una nueva categoría con el nombre.
+    cursor.execute(
+        "INSERT INTO categorias (nombre) VALUES (%s)",
+        (nombre,)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/categorias")  
 
 # llamado a la ruta de movimientos, aún no implementada, pero se muestra el template DETALLAR COMPORTAMIENTO DE LA RUTA DE MOVIMIENTOS, SE MUESTRA EL TEMPLATE CON LOS MOVIMIENTOS CORRESPONDIENTES A CADA TIPO DE MOVIMIENTO
 @app.route("/mov", methods=["GET", "POST"])
@@ -282,7 +320,9 @@ def mov(tipo=None):
         movimientos=movimientos,
         categorias=categorias
     )
+
 #MODAL EDITAR MOVIMIENTO
+
 #Funcion del boton "Modificar".
 @app.route("/mov/editar/<int:id>", methods=["POST"])
 def editar_movimiento(id):
