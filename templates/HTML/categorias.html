@@ -15,55 +15,33 @@
         <h2>Categorias</h2>
         <p>Aquí puedes gestionar tus categorías de ingresos y gastos.</p>
 
-    <!-- Botón para abrir el modal de creación de categorías -->
         <button
             class="btn btn-sm btn-outline-primary"
             data-bs-toggle="modal"
-            data-bs-target="#modalCrearCategorias"
-            data-id="{{ categorias.id }}"
-            data-descripcion="{{ categoriass.descripcion }}">
+            data-bs-target="#modalCrearCategorias">
             Crear categoria
         </button>
-    
-    <!-- botón para abrir el modal de creacion de categorías -->
+
         <div class="modal fade" id="modalCrearCategorias" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <form id="formCrearCategorias" method="POST" class="modal-content">
-        <div class="modal-header">
-            <h5 class="modal-title">Crear categoría</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-
-            <!-- Datos del modal Crear -->
-            Nombre
-            <input type="text" name="descripcion" class="form-control" required>
+            <div class="modal-dialog">
+                <form id="formCrearCategorias" method="POST" action="/categorias/crear" class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Crear categoría</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label for="nombre" class="form-label">Nombre</label>
+                        <input type="text" id="nombre" name="nombre" class="form-control" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
             </div>
+        </div>
 
-
-        <!-- Formulario para agregar nueva categoría -->
-        <table class="table table-bordered">
-            <thead class="table-light">
-                <tr>
-                    <th>Nombre de la categoría</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <form method="POST" action="/categorias/crear">
-                        <td>
-                            <input type="text" name="nombre" class="form-control" placeholder="Nueva categoría" required>
-                        </td>
-                        <td>
-                            <button type="submit" class="btn btn-primary">Agregar</button>
-                        </td>
-                    </form>
-                </tr>
-            </tbody>
-
-        <!-- Lista de categorías existentes -->
-        <h3>Categorías existentes</h3>
+        <h3 class="mt-4">Categorías existentes</h3>
         <ul class="list-group">
             {% for categoria in categorias %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -71,10 +49,10 @@
                 <form method="POST" action="/categorias/eliminar/{{ categoria.id }}" onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta categoría?');">
                     <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
                 </form>
-
-    
-
-
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
 
     {% include 'footer.html' %}
 </body>
