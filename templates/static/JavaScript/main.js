@@ -1,8 +1,8 @@
-// JavaScript para la funcionalidad de los modales y el menú de navegación.
+// Funcionalidad del menú de navegación.
 document.addEventListener("DOMContentLoaded", () => {
   const toggleBtn = document.querySelector(".menu-toggle");
   const navMenu = document.querySelector(".nav-menu");
-// Funcionalidad para el menú de navegación en dispositivos móviles.
+// Funcionalidad dispositivos móviles.
   if (toggleBtn && navMenu) {
     toggleBtn.addEventListener("click", () => {
       navMenu.classList.toggle("active");
@@ -15,12 +15,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const formEliminar = document.getElementById("formEliminar");
 
   let movimientoIdSeleccionado = null;
-  // Configuración del modal de editar para cargar los datos del movimiento seleccionado.
+  // modal de editar movimiento.
   if (modalEditar) {
     modalEditar.addEventListener("show.bs.modal", (event) => {
       const btn = event.relatedTarget;
       if (!btn) return;
-      // Obtener los datos del movimiento desde los atributos data- del botón que abrió el modal.
+      // Obtener los datos del movimiento del botón modal.
       const id = btn.getAttribute("data-id");
       const descripcion = btn.getAttribute("data-descripcion");
       const categoriaId = btn.getAttribute("data-categoria-id");
@@ -33,7 +33,6 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("edit_monto").value = monto || "";
       document.getElementById("edit_categoria_id").value = categoriaId || "";
       document.getElementById("edit_categoria_name").textContent = categoriaNombre || "Seleccionar categoria";
-      // Configurar la acción del formulario para enviar los datos al endpoint correcto.
       if (formEditar && id) {
         formEditar.action = "/mov/editar/" + id;
       }
@@ -49,7 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
   }
-  // Configuración del modal de eliminar para establecer la acción del formulario al movimiento seleccionado.
+  // modal de eliminar movimiento.
   if (modalEliminar) {
     modalEliminar.addEventListener("show.bs.modal", () => {
       if (formEliminar && movimientoIdSeleccionado) {
@@ -57,13 +56,13 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
-  //editar el modal categorias
+  // Funcionalidad para los modales de editar y eliminar categorías.
   const modalEditarCategoria = document.getElementById("modalEditarCategoria");
   const formEditarCategoria = document.getElementById("formEditarCategoria");
   const modalEliminarCategoria = document.getElementById("modalEliminarCategoria");
   const formEliminarCategoria = document.getElementById("formEliminarCategoria");
   let categoriaIdSeleccionada = null;
-
+  // modal de editar para categorías.
   if (modalEditarCategoria) {
     modalEditarCategoria.addEventListener("show.bs.modal", (event) => {
       const btn = event.relatedTarget;
@@ -78,7 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
-
+  // modal de eliminar para categorías.
   if (modalEliminarCategoria) {
     modalEliminarCategoria.addEventListener("show.bs.modal", () => {
       if (formEliminarCategoria && categoriaIdSeleccionada) {
