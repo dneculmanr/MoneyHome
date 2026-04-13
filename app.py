@@ -162,7 +162,7 @@ def perfil():
 
 #Categorias.
 
-#Ruta Flask para las categorias.
+#Ruta Flask para ver las categorias.
 @app.route("/categorias")
 def categorias():
     if "user_id" not in session:
@@ -170,7 +170,7 @@ def categorias():
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-
+    #Trae todas las categorias ordenadas por nombre.
     cursor.execute("""
         SELECT id, nombre
         FROM categorias
@@ -206,7 +206,50 @@ def crear_categoria():
 
     return redirect("/categorias")  
 
-# llamado a la ruta de movimientos, aún no implementada, pero se muestra el template DETALLAR COMPORTAMIENTO DE LA RUTA DE MOVIMIENTOS, SE MUESTRA EL TEMPLATE CON LOS MOVIMIENTOS CORRESPONDIENTES A CADA TIPO DE MOVIMIENTO
+#MODAL EDITAR CATEGORIAS
+@app.route("/categorias/editar/<int:id>", methods=["POST"])
+def editar_categoria(id):
+    if "user_id" not in session:
+        return redirect("/login")
+
+    nombre = request.form.get("nombre", "").strip()
+
+    if not nombre:
+        return redirect("/categorias")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    #Actualiza el nombre de la categoría con el id especificado.
+    cursor.execute(
+        "UPDATE categorias SET nombre = %s WHERE id = %s",
+        (nombre, id)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/categorias")
+
+#MODAL ELIMINAR CATEGORIAS
+@app.route("/categorias/eliminar/<int:id>", methods=["POST"])
+def eliminar_categoria(id):
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    #Elimina la categoría con el id especificado.
+    cursor.execute(
+        "DELETE FROM categorias WHERE id = %s",
+        (id,)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/categorias")
+
+# Ruta para ver los movimientos.
 @app.route("/mov", methods=["GET", "POST"])
 @app.route("/mov/<tipo>", methods=["GET", "POST"])
 
