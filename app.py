@@ -23,7 +23,7 @@ def index():
         # Obtener movimientos
         cursor.execute("""
             SELECT * FROM movimientos 
-            WHERE usuario_id = %s
+            WHERE user_id = %s
         """, (session["user_id"],))
 
         movimientos = cursor.fetchall()
@@ -58,7 +58,7 @@ def register():
         cursor = conn.cursor()
 
         cursor.execute(
-            "INSERT INTO usuarios (nombre, email, password) VALUES (%s, %s, %s)",
+            "INSERT INTO user (nombre, email, password) VALUES (%s, %s, %s)",
             (nombre, email, password)
         )
 
@@ -80,7 +80,7 @@ def login():
         cursor = conn.cursor(dictionary=True)
 
         cursor.execute(
-            "SELECT * FROM usuarios WHERE email = %s AND password = %s",
+            "SELECT * FROM user_id WHERE email = %s AND password = %s",
             (email, password)
         )
 
@@ -127,7 +127,7 @@ def dashboard():
         SELECT m.*, c.nombre AS categoria
         FROM movimientos m
         LEFT JOIN categorias c ON m.categoria_id = c.id
-        WHERE m.usuario_id = %s
+        WHERE m.user_id = %s
         ORDER BY m.fecha DESC
     """, (user_id,))
     movimientos = cursor.fetchall()
@@ -138,7 +138,7 @@ def dashboard():
             SUM(CASE WHEN tipo='ingreso' THEN monto ELSE 0 END) AS ingresos,
             SUM(CASE WHEN tipo='gasto' THEN monto ELSE 0 END) AS gastos
         FROM movimientos
-        WHERE usuario_id = %s
+        WHERE user_id = %s
     """, (user_id,))
     totales = cursor.fetchone()
 
@@ -294,7 +294,7 @@ def mov(tipo=None):
         cursor = conn.cursor()
         cursor.execute(
                 """
-                INSERT INTO movimientos (usuario_id, monto, categoria_id, descripcion, tipo)
+                INSERT INTO movimientos (user_id, monto, categoria_id, descripcion, tipo)
                 VALUES (%s, %s, %s, %s, %s)
                 """,
             (session["user_id"], monto, categoria_id, descripcion, tipo_movimiento))
@@ -326,7 +326,7 @@ def mov(tipo=None):
                 c.nombre AS categoria
             FROM movimientos m
             LEFT JOIN categorias c ON m.categoria_id = c.id
-            WHERE m.usuario_id = %s AND m.tipo = %s
+            WHERE m.user_id = %s AND m.tipo = %s
             ORDER BY m.fecha DESC
         """, (session["user_id"], opciones[tipo]["db_tipo"]))
         movimientos = cursor.fetchall()
@@ -337,7 +337,7 @@ def mov(tipo=None):
                 c.nombre AS categoria
             FROM movimientos m
             LEFT JOIN categorias c ON m.categoria_id = c.id
-            WHERE m.usuario_id = %s
+            WHERE m.user_id = %s
             ORDER BY m.fecha DESC
         """, (session["user_id"],))
         movimientos = cursor.fetchall()
@@ -393,7 +393,7 @@ def editar_movimiento(id):
         """
         UPDATE movimientos
         SET descripcion = %s, monto = %s, categoria_id = %s
-        WHERE id = %s AND usuario_id = %s
+        WHERE id = %s AND user_id = %s
         """,
         (descripcion, monto, categoria_id, id, session["user_id"])
     )
@@ -417,7 +417,7 @@ def eliminar_movimiento(id):
     cursor.execute(
         """
         DELETE FROM movimientos
-        WHERE id = %s AND usuario_id = %s
+        WHERE id = %s AND user_id = %s
         """,
         (id, session["user_id"])
     )
