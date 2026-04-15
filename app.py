@@ -1,5 +1,7 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session,send_file
 import mysql.connector
+from io import BytesIO
+from openpyxl import Workbook
 #rutas
 app = Flask(__name__, template_folder='templates/HTML', static_folder='templates/static')
 app.secret_key = "secretkey"
@@ -427,7 +429,77 @@ def eliminar_movimiento(id):
 
     return redirect("/mov")
 
+#-------------------REPORTES-------------------
+@app.route("/reportes")
+def reportes():
+    if "user_id" not in session:
+        return redirect("/login")
+    return render_template("reportes.html")
+
+# Visualizar reportes.
+@app.route("/reportes/visualizar")
+def visualizar_reportes():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+
+    conn.close()
+
+    return render_template("visualizar_reportes.html", reportes=reportes)
+
+# REPORTE GASTOS MENSUALES.
+@app.route("/reporte/gastos_mensuales/excel")
+def reporte_gastos_mensuales_excel():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    #Consulta para obtener el total de gastos por mes y categoría, ordenados por mes descendente y total de gastos descendente.
+    cursor.execute("""
+        SELECT
+            DATE_FORMAT(fecha, '%%Y-%%m') AS mes,
+            c.nombre AS categoria,
+            SUM(m.monto) AS total_gastos
+        FROM movimientos m
+        LEFT JOIN categorias c ON m.categoria_id = c.id
+        WHERE m.user_id = %s AND m.tipo = 'gasto'
+        GROUP BY mes, categoria
+        ORDER BY mes DESC, total_gastos DESC
+    """, (session["user_id"],))
+    filas = cursor.fetchall()
+    conn.close()
+    # Crear un libro de Excel y una hoja.
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Gastos Mensuales"
+
+    ws.append(["Mes", "Categoria", "Total Gastos"])
+    # Agregar filas al Excel.
+    for f in filas:
+        ws.append([
+            f["mes"],
+            f["categoria"] if f["categoria"] else "Sin categoria",
+            float(f["total_gastos"] or 0)
+        ])
+
+    archivo = BytesIO()
+    wb.save(archivo)
+    archivo.seek(0)
+
+    return send_file(
+        archivo,
+        as_attachment=True,
+        download_name="gastos_mensuales.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+
+
+
+
 if __name__ == "__main__":
-    app.run(debug=True)    
-
-
+    app.run(debug=True)
