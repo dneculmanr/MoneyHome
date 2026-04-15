@@ -60,7 +60,7 @@ def register():
         cursor = conn.cursor()
 
         cursor.execute(
-            "INSERT INTO user (nombre, email, password) VALUES (%s, %s, %s)",
+            "INSERT INTO usuarios (nombre, email, password) VALUES (%s, %s, %s)",
             (nombre, email, password)
         )
 
@@ -82,7 +82,7 @@ def login():
         cursor = conn.cursor(dictionary=True)
 
         cursor.execute(
-            "SELECT * FROM user_id WHERE email = %s AND password = %s",
+            "SELECT * FROM usuarios WHERE email = %s AND password = %s",
             (email, password)
         )
 
@@ -317,7 +317,7 @@ def mov(tipo=None):
     #Si el tipo de movimento no esta vacio y tiene un valor en la BD, en tonces se realiza la consulta:
         # * traer filas de movimientos 
         # * unir con categorias para obtener el nombre de la categoría
-        # * filtrar por usuario_id
+        # * filtrar por user_id
         # * filtrar por tipo
         # * ordenar por fecha descendente
 
