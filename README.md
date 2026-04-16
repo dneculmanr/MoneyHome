@@ -2,37 +2,55 @@
 
 ## 📌 Descripción
 
-MoneyHome es una aplicación web desarrollada en Python con Flask que permite a los usuarios registrar y gestionar sus ingresos y gastos del hogar, visualizar su saldo y organizar sus movimientos mediante categorías.
+**MoneyHome** es una aplicación web desarrollada en **Python + Flask** que permite gestionar de forma simple y eficiente las finanzas del hogar.
+
+El sistema permite registrar ingresos y gastos, organizarlos por categorías y generar reportes, facilitando la toma de decisiones financieras.
+
+---
+
+## 🚀 Características
+
+- 🔐 Registro e inicio de sesión de usuarios
+- 💵 Registro de ingresos y gastos
+- 🗂️ Clasificación por categorías
+- 📊 Dashboard con resumen financiero
+- 📋 Visualización de movimientos
+- 📈 Cálculo automático de saldo
+- 📊 Exportación de reportes:
+  - Excel (.xlsx)
+  - PDF
+
+---
+
+## 🛠️ Tecnologías utilizadas
+
+- Python 3
+- Flask
+- MySQL
+- mysql-connector-python
+- openpyxl
 
 ---
 
 ## ⚙️ Requisitos
 
-Antes de ejecutar el sistema, asegúrate de tener instalado:
+Antes de ejecutar el sistema:
 
-* Python 3
-* MySQL Server
-* MySQL Workbench (opcional)
-* Visual Studio Code
+- Python 3
+- MySQL Server
+- MySQL Workbench (opcional)
+- Visual Studio Code (recomendado)
 
 ---
 
 ## 🧱 Configuración de la Base de Datos
 
-### 1. Iniciar MySQL
-
-* Abrir MySQL Workbench
-* Conectarse a `Local instance MySQL80`
-* Ingresar contraseña del usuario root
-
-### 2. Crear la base de datos
-
-Ejecutar el siguiente script SQL:
+### 1. Crear base de datos
 
 ```sql
 CREATE DATABASE moneyhome;
 USE moneyhome;
-
+2. Crear tablas
 CREATE TABLE usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100),
@@ -45,71 +63,47 @@ CREATE TABLE categorias (
     nombre VARCHAR(100)
 );
 
+CREATE TABLE tipo_movimiento (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(20)
+);
+
 CREATE TABLE movimientos (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    usuario_id INT,
+    user_id INT,
     monto DECIMAL(10,2),
     categoria_id INT,
+    tipo_id INT,
     fecha DATE,
     descripcion TEXT,
-    FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
-    FOREIGN KEY (categoria_id) REFERENCES categorias(id)
-    FOREIGN KEY (tipo_movimiento_id) REFERENCES tipo_movimientos(id)
+    FOREIGN KEY (user_id) REFERENCES usuarios(id),
+    FOREIGN KEY (categoria_id) REFERENCES categorias(id),
+    FOREIGN KEY (tipo_id) REFERENCES tipo_movimiento(id)
 );
-
-CREATE TABLE tipo_movimiento (
-    id INT AUTO_INCREMENTAL PRIMARY KEY,
-    nombre VARCHAR (20),
-    tipo NUMBER
-);
-
-```
-
-### 3. Insertar datos iniciales 
-
-```sql
+3. Datos iniciales
 INSERT INTO categorias (nombre) VALUES
 ('Alimentación'),
 ('Transporte'),
 ('Ocio'),
-('Salud');
+('Salud'),
+('Otros');
 
-INSERT INTO tipo_movimiento (nombre,tipo) VALUES
-('Ingreso', 1),
-('Egreso',2),
-```
+INSERT INTO tipo_movimiento (nombre) VALUES
+('ingreso'),
+('gasto'),
+('transferencia');
+🔌 Configuración del Proyecto
+1. Clonar repositorio
+git clone https://github.com/dneculmanr/MoneyHome.git
+cd MoneyHome
+2. Instalar dependencias
+pip install -r requirements.txt
 
----
+Si no existe:
 
-## 🔌 Configuración del Proyecto
-
-### 1. Abrir proyecto en VS Code
-
-* Abrir la carpeta del proyecto
-
-### 2. Abrir terminal
-
-En VS Code:
-
-```
-Terminal → New Terminal
-```
-
-### 3. Instalar dependencias
-
-```bash
-pip install flask mysql-connector-python
-```
-
----
-
-## ▶️ Ejecución del Sistema
-
-### 1. Verificar conexión en `app.py`
-
-Asegurarse de que los datos coincidan con tu configuración:
-
-```python
+pip install flask mysql-connector-python openpyxl
+▶️ Ejecución
+1. Configurar conexión en app.py
 def get_db_connection():
     return mysql.connector.connect(
         host="localhost",
@@ -117,65 +111,53 @@ def get_db_connection():
         password="TU_PASSWORD",
         database="moneyhome"
     )
-```
-
----
-
-### 2. Ejecutar la aplicación
-
-En la terminal:
-
-```bash
+2. Ejecutar
 python app.py
-```
-
----
-
-### 3. Abrir en el navegador
-
-Ir a:
-
-```
+3. Abrir en navegador
 http://127.0.0.1:5000
-```
+📊 Reportes
 
----
+El sistema permite exportar:
 
-## 🔐 Funcionalidades
+📊 Excel (.xlsx)
+📄 PDF
 
-* Registro de usuario
-* Inicio de sesión
-* Registro de ingresos y gastos
-* Clasificación por categorías
-* Visualización de movimientos
-* Cálculo automático de saldo
-* Dashboard con resumen financiero
+Incluye:
 
----
-
-## 🧪 Notas
-
-* MySQL debe estar en ejecución para que la aplicación funcione
-* No es necesario mantener abierto MySQL Workbench
-* Este proyecto utiliza un servidor de desarrollo (Flask)
-
----
-
-## 🚀 Estado del Proyecto
+Ingresos
+Gastos
+Categorías
+Balance total
+🧪 Notas
+MySQL debe estar en ejecución
+No es necesario mantener abierto Workbench
+Flask usa servidor de desarrollo
+🚀 Estado del Proyecto
 
 Versión actual: MVP (Producto Mínimo Viable)
 
-Incluye funcionalidades básicas para la gestión de finanzas del hogar.
+✔ Funcional
+✔ Escalable
+✔ En desarrollo continuo
 
----
+🔮 Mejoras futuras
+API REST
+Autenticación segura (hash de contraseñas)
+Dashboard con gráficos
+Gestión de familias compartidas
+Deploy en la nube
+👨‍💻 Autores
+Daniel Neculman
+Paula Matamala
+📌 Observaciones
 
-## 👨‍💻 Autores
+Proyecto desarrollado con fines académicos aplicando:
 
-* Daniel Neculman
-* Paula Matamala
+Desarrollo web
+Bases de datos relacionales
+Arquitectura de software
+Metodologías ágiles
+📄 Licencia
 
----
+Uso educativo y personal.
 
-## 📌 Observaciones
-
-El sistema fue desarrollado con fines académicos, aplicando conceptos de desarrollo web, bases de datos relacionales y metodologías ágiles.
