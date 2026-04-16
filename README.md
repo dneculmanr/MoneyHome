@@ -2,67 +2,55 @@
 
 ## 📌 Descripción
 
-**MoneyHome** es una aplicación web desarrollada en **Python con Flask** que permite gestionar de forma simple y eficiente las finanzas del hogar.
+**MoneyHome** es una aplicación web desarrollada en **Python + Flask** que permite gestionar de forma simple y eficiente las finanzas del hogar.
 
-El sistema permite registrar ingresos y gastos, organizarlos por categorías y generar **reportes en Excel y PDF**, facilitando el control financiero del usuario.
+El sistema permite registrar ingresos y gastos, organizarlos por categorías y generar reportes, facilitando la toma de decisiones financieras.
 
 ---
 
 ## 🚀 Características
 
-* Registro de usuarios 🔐
-* Inicio de sesión
-* Registro de ingresos y gastos 💵💸
-* Clasificación por categorías
-* Visualización de movimientos
-* Cálculo automático de saldo
-* Dashboard con resumen financiero
-* Exportación de reportes:
-
-  * 📊 Excel (openpyxl)
-  * 📄 PDF
+- 🔐 Registro e inicio de sesión de usuarios
+- 💵 Registro de ingresos y gastos
+- 🗂️ Clasificación por categorías
+- 📊 Dashboard con resumen financiero
+- 📋 Visualización de movimientos
+- 📈 Cálculo automático de saldo
+- 📊 Exportación de reportes:
+  - Excel (.xlsx)
+  - PDF
 
 ---
 
 ## 🛠️ Tecnologías utilizadas
 
-* Python 3
-* Flask
-* MySQL
-* mysql-connector-python
-* openpyxl (generación de reportes en Excel)
+- Python 3
+- Flask
+- MySQL
+- mysql-connector-python
+- openpyxl
 
 ---
 
 ## ⚙️ Requisitos
 
-Antes de ejecutar el sistema, asegúrate de tener instalado:
+Antes de ejecutar el sistema:
 
-* Python 3
-* MySQL Server
-* MySQL Workbench (opcional)
-* Visual Studio Code (recomendado)
+- Python 3
+- MySQL Server
+- MySQL Workbench (opcional)
+- Visual Studio Code (recomendado)
 
 ---
 
 ## 🧱 Configuración de la Base de Datos
 
-### 1. Iniciar MySQL
-
-1. Abrir **MySQL Workbench**
-2. Conectarse a `Local instance MySQL80`
-3. Ingresar la contraseña del usuario `root`
-
----
-
-### 2. Crear la base de datos
-
-Ejecutar el siguiente script SQL:
+### 1. Crear base de datos
 
 ```sql
 CREATE DATABASE moneyhome;
 USE moneyhome;
-
+2. Crear tablas
 CREATE TABLE usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100),
@@ -77,74 +65,45 @@ CREATE TABLE categorias (
 
 CREATE TABLE tipo_movimiento (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(20),
-    tipo INT
+    nombre VARCHAR(20)
 );
 
 CREATE TABLE movimientos (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    usuario_id INT,
+    user_id INT,
     monto DECIMAL(10,2),
     categoria_id INT,
-    tipo_movimiento_id INT,
+    tipo_id INT,
     fecha DATE,
     descripcion TEXT,
-    FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+    FOREIGN KEY (user_id) REFERENCES usuarios(id),
     FOREIGN KEY (categoria_id) REFERENCES categorias(id),
-    FOREIGN KEY (tipo_movimiento_id) REFERENCES tipo_movimiento(id)
+    FOREIGN KEY (tipo_id) REFERENCES tipo_movimiento(id)
 );
-```
-
----
-
-### 3. Insertar datos iniciales
-
-```sql
+3. Datos iniciales
 INSERT INTO categorias (nombre) VALUES
 ('Alimentación'),
 ('Transporte'),
 ('Ocio'),
-('Salud');
+('Salud'),
+('Otros');
 
-INSERT INTO tipo_movimiento (nombre, tipo) VALUES
-('Ingreso', 1),
-('Egreso', 2);
-```
-
----
-
-## 🔌 Configuración del Proyecto
-
-### 1. Clonar el repositorio
-
-```bash
+INSERT INTO tipo_movimiento (nombre) VALUES
+('ingreso'),
+('gasto'),
+('transferencia');
+🔌 Configuración del Proyecto
+1. Clonar repositorio
 git clone https://github.com/dneculmanr/MoneyHome.git
 cd MoneyHome
-```
-
----
-
-### 2. Instalar dependencias
-
-```bash
+2. Instalar dependencias
 pip install -r requirements.txt
-```
 
-> Si no tienes el archivo `requirements.txt`, puedes instalar manualmente:
+Si no existe:
 
-```bash
 pip install flask mysql-connector-python openpyxl
-```
-
----
-
-## ▶️ Ejecución del Sistema
-
-### 1. Configurar conexión a la base de datos
-
-En el archivo `app.py`, verificar:
-
-```python
+▶️ Ejecución
+1. Configurar conexión en app.py
 def get_db_connection():
     return mysql.connector.connect(
         host="localhost",
@@ -152,86 +111,53 @@ def get_db_connection():
         password="TU_PASSWORD",
         database="moneyhome"
     )
-```
-
----
-
-### 2. Ejecutar la aplicación
-
-```bash
+2. Ejecutar
 python app.py
-```
-
----
-
-### 3. Acceder desde el navegador
-
+3. Abrir en navegador
 http://127.0.0.1:5000
+📊 Reportes
 
----
+El sistema permite exportar:
 
-## 📊 Generación de Reportes
+📊 Excel (.xlsx)
+📄 PDF
 
-El sistema permite exportar información financiera en:
+Incluye:
 
-* **Excel (.xlsx)** mediante la librería `openpyxl`
-* **PDF** para visualización y respaldo
+Ingresos
+Gastos
+Categorías
+Balance total
+🧪 Notas
+MySQL debe estar en ejecución
+No es necesario mantener abierto Workbench
+Flask usa servidor de desarrollo
+🚀 Estado del Proyecto
 
-Los reportes incluyen datos como:
+Versión actual: MVP (Producto Mínimo Viable)
 
-* Ingresos
-* Gastos
-* Categorías
-* Fechas
-* Balance total
+✔ Funcional
+✔ Escalable
+✔ En desarrollo continuo
 
----
+🔮 Mejoras futuras
+API REST
+Autenticación segura (hash de contraseñas)
+Dashboard con gráficos
+Gestión de familias compartidas
+Deploy en la nube
+👨‍💻 Autores
+Daniel Neculman
+Paula Matamala
+📌 Observaciones
 
-## 🧪 Notas
+Proyecto desarrollado con fines académicos aplicando:
 
-* MySQL debe estar en ejecución
-* No es necesario mantener abierto MySQL Workbench
-* Flask utiliza un servidor de desarrollo (no productivo)
+Desarrollo web
+Bases de datos relacionales
+Arquitectura de software
+Metodologías ágiles
+📄 Licencia
 
----
-
-## 🚀 Estado del Proyecto
-
-**Versión actual:** MVP (Producto Mínimo Viable)
-
-Incluye funcionalidades esenciales para la gestión de finanzas del hogar, con posibilidad de expansión futura.
-
----
-
-## 🔮 Mejoras futuras
-
-* Migración a arquitectura más modular
-* Implementación de API REST
-* Mejoras en la interfaz de usuario
-* Sistema de reportes avanzados (gráficos)
-* Deploy en la nube
-
----
-
-## 👨‍💻 Autores
-
-* Daniel Neculman
-* Paula Matamala
-
----
-
-## 📌 Observaciones
-
-Este sistema fue desarrollado con fines académicos, aplicando conceptos de:
-
-* Desarrollo web
-* Bases de datos relacionales
-* Arquitectura de software
-* Metodologías ágiles
-
----
-
-## 📄 Licencia
-
-Proyecto de uso educativo y personal.
+Uso educativo y personal.
 
