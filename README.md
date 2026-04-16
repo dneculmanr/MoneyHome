@@ -1,163 +1,125 @@
-# 💰 MoneyHome - Sistema de Finanzas del Hogar
+# 🔧 Actualización de Estructura y Base de Datos – MoneyHome
 
-## 📌 Descripción
+## 🧱 Cambios en la Base de Datos
 
-**MoneyHome** es una aplicación web desarrollada en **Python + Flask** que permite gestionar de forma simple y eficiente las finanzas del hogar.
+Se realizó una normalización de la tabla `movimientos`, eliminando el uso de la columna `tipo` (string) y reemplazándola por una relación con la tabla `tipo_movimiento` mediante `tipo_id`.
 
-El sistema permite registrar ingresos y gastos, organizarlos por categorías y generar reportes, facilitando la toma de decisiones financieras.
-
----
-
-## 🚀 Características
-
-- 🔐 Registro e inicio de sesión de usuarios
-- 💵 Registro de ingresos y gastos
-- 🗂️ Clasificación por categorías
-- 📊 Dashboard con resumen financiero
-- 📋 Visualización de movimientos
-- 📈 Cálculo automático de saldo
-- 📊 Exportación de reportes:
-  - Excel (.xlsx)
-  - PDF
-
----
-
-## 🛠️ Tecnologías utilizadas
-
-- Python 3
-- Flask
-- MySQL
-- mysql-connector-python
-- openpyxl
-
----
-
-## ⚙️ Requisitos
-
-Antes de ejecutar el sistema:
-
-- Python 3
-- MySQL Server
-- MySQL Workbench (opcional)
-- Visual Studio Code (recomendado)
-
----
-
-## 🧱 Configuración de la Base de Datos
-
-### 1. Crear base de datos
+### Pasos para actualizar la base de datos:
 
 ```sql
-CREATE DATABASE moneyhome;
-USE moneyhome;
-2. Crear tablas
-CREATE TABLE usuarios (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100),
-    email VARCHAR(100) UNIQUE,
-    password VARCHAR(255)
-);
+-- 1. Verificar datos actuales
+SELECT * FROM movimientos;
 
-CREATE TABLE categorias (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100)
-);
+-- 2. (Opcional) respaldo
+CREATE TABLE movimientos_backup AS SELECT * FROM movimientos;
 
-CREATE TABLE tipo_movimiento (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(20)
-);
+-- 3. Eliminar columna antigua
+ALTER TABLE movimientos DROP COLUMN tipo;
 
-CREATE TABLE movimientos (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    monto DECIMAL(10,2),
-    categoria_id INT,
-    tipo_id INT,
-    fecha DATE,
-    descripcion TEXT,
-    FOREIGN KEY (user_id) REFERENCES usuarios(id),
-    FOREIGN KEY (categoria_id) REFERENCES categorias(id),
-    FOREIGN KEY (tipo_id) REFERENCES tipo_movimiento(id)
-);
-3. Datos iniciales
-INSERT INTO categorias (nombre) VALUES
-('Alimentación'),
-('Transporte'),
-('Ocio'),
-('Salud'),
-('Otros');
+-- 4. Validar estructura final
+DESCRIBE movimientos;
+```
 
-INSERT INTO tipo_movimiento (nombre) VALUES
-('ingreso'),
-('gasto'),
-('transferencia');
-🔌 Configuración del Proyecto
-1. Clonar repositorio
-git clone https://github.com/dneculmanr/MoneyHome.git
-cd MoneyHome
-2. Instalar dependencias
-pip install -r requirements.txt
+### ✅ Estructura final esperada:
 
-Si no existe:
+* user_id
+* monto
+* categoria_id
+* tipo_id
+* fecha
+* descripcion
 
-pip install flask mysql-connector-python openpyxl
-▶️ Ejecución
-1. Configurar conexión en app.py
-def get_db_connection():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="TU_PASSWORD",
-        database="moneyhome"
-    )
-2. Ejecutar
-python app.py
-3. Abrir en navegador
-http://127.0.0.1:5000
-📊 Reportes
+---
 
-El sistema permite exportar:
+## ⚙️ Cambios en Backend (Flask)
 
-📊 Excel (.xlsx)
-📄 PDF
+* Se estandarizó el uso de `user_id` en lugar de `usuario_id`.
+* Se eliminaron todas las referencias a `tipo` (string).
+* Se implementó correctamente la relación con `tipo_movimiento`.
+* Se corrigieron múltiples rutas que generaban errores 404.
+* Se agregaron nuevas funcionalidades:
 
-Incluye:
+  * CRUD completo de categorías
+  * Edición de movimientos
+  * Perfil editable
+  * Reportes en Excel (openpyxl)
 
-Ingresos
-Gastos
-Categorías
-Balance total
-🧪 Notas
-MySQL debe estar en ejecución
-No es necesario mantener abierto Workbench
-Flask usa servidor de desarrollo
-🚀 Estado del Proyecto
+---
 
-Versión actual: MVP (Producto Mínimo Viable)
+## 🎨 Cambios en la Estructura del Proyecto
 
-✔ Funcional
-✔ Escalable
-✔ En desarrollo continuo
+Se reorganizó la estructura de carpetas para cumplir con las convenciones de Flask:
 
-🔮 Mejoras futuras
-API REST
-Autenticación segura (hash de contraseñas)
-Dashboard con gráficos
-Gestión de familias compartidas
-Deploy en la nube
-👨‍💻 Autores
-Daniel Neculman
-Paula Matamala
-📌 Observaciones
+### 📁 Antes (incorrecto)
 
-Proyecto desarrollado con fines académicos aplicando:
+* HTML dentro de subcarpetas inconsistentes
+* static dentro de templates ❌
+* carpeta `Javascript` ❌
 
-Desarrollo web
-Bases de datos relacionales
-Arquitectura de software
-Metodologías ágiles
-📄 Licencia
+### 📁 Ahora (correcto)
 
-Uso educativo y personal.
+```
+/project
+│
+├── app.py
+├── templates/
+│   ├── index.html
+│   ├── login.html
+│   ├── register.html
+│   ├── mov.html
+│   ├── categorias.html
+│   ├── perfil.html
+│   ├── reportes.html
+│   └── editar_*.html
+│
+├── static/
+│   ├── CSS/
+│   ├── js/          ← (antes Javascript)
+│   └── Imagenes/
+```
+
+### 🔑 Cambios clave:
+
+* Los HTML ahora van **directamente dentro de `templates/`**
+* La carpeta `static/` está **fuera de `templates/`**
+* Se renombró:
+
+  * `Javascript` → `js`
+
+---
+
+## 👤 Perfil de Usuario
+
+* Edición de nombre, email y contraseña
+* Actualización automática en sesión
+* Redirección al dashboard tras guardar
+* Implementación de mensajes flash
+
+---
+
+## 📊 Reportes
+
+* Exportación a Excel funcional
+* PDF pendiente de implementación
+
+---
+
+## 🚧 Pendientes
+
+* Implementación de sistema de familia (multiusuario)
+* Generación de reportes en PDF
+* Mejoras de seguridad (hash de contraseñas)
+
+---
+
+## 🚀 Estado actual
+
+✔ Sistema funcional
+✔ CRUD completo
+✔ Estructura ordenada
+✔ Listo para continuar desarrollo
+
+---
+
+Proyecto en estado estable para continuar con nuevas funcionalidades.
 
