@@ -20,7 +20,7 @@
     <button class="btn btn-secondary mb-3" onclick="history.back()">← Volver</button>
 
     {% if tipo == 'crear' %}
-
+<!--CREAR MOVIMIENTOS-->
     <div class="card p-4 shadow-sm">
         <h3>Crear Movimiento</h3>
 
@@ -56,6 +56,11 @@
                     </select>
                 </div>
 
+                <div class="col-md-4">
+                    <label class="form-label">Fecha</label>
+                    <input name="fecha" type="date" class="form-control" required>
+                </div>
+
                 <div class="col-12">
                     <button type="submit" class="btn btn-success">Guardar</button>
                 </div>
@@ -87,6 +92,7 @@
                         <td>{{ m.descripcion }}</td>
                         <td>{{ m.categoria }}</td>
                         <td>${{ "%.2f"|format(m.monto) }}</td>
+                        <td>{{m.fecha}}</td>
 
                         <td>
                             {% if m.tipo == 'ingreso' %}

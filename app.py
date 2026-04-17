@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, session, send_file, flash
 from openpyxl import Workbook
-import io
+from io import BytesIO
 import mysql.connector
 
 app = Flask(__name__)
@@ -135,12 +135,13 @@ def mov(tipo=None):
 
         cursor.execute("""
             INSERT INTO movimientos (user_id, monto, categoria_id, tipo_id, fecha, descripcion)
-            VALUES (%s,%s,%s,%s,CURDATE(),%s)
+            VALUES (%s,%s,%s,%s,%s,%s)
         """, (
             session['user_id'],
             request.form['monto'],
             request.form['categoria_id'],
             tipo_map.get(request.form['tipo_movimiento']),
+            request.form['fecha'],
             request.form['descripcion']
         ))
 
@@ -336,21 +337,73 @@ def perfil():
 # =========================
 # REPORTES
 # =========================
-@app.route('/reportes')
+@app.route("/reportes")
 def reportes():
-    return render_template('reportes.html')
+    if "user_id" not in session:
+        return redirect("/login")
+    return render_template("reportes.html")
 
-@app.route('/familia/unirse', methods=['POST'])
-def unirse_familia():
+# Visualizar reportes.
+@app.route("/reportes/visualizar")
+def visualizar_reportes():
+    if "user_id" not in session:
+        return redirect("/login")
+
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
 
+
+    conn.close()
+
+    return render_template("visualizar_reportes.html", reportes=reportes)
+
+# REPORTE GASTOS MENSUALES.
+@app.route("/reporte/gastos_mensuales/excel")
+def reporte_gastos_mensuales_excel():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
     cursor.execute("""
-        UPDATE usuarios SET familia_id = %s WHERE id = %s
-    """, (request.form['familia_id'], session['user_id']))
+        SELECT
+            DATE_FORMAT(fecha, '%%Y-%%m') AS mes,
+            c.nombre AS categoria,
+            SUM(m.monto) AS total_gastos
+        FROM movimientos m
+        LEFT JOIN categorias c ON m.categoria_id = c.id
+        WHERE m.user_id = %s AND m.tipo_id = 2
+        GROUP BY mes, categoria
+        ORDER BY mes DESC, total_gastos DESC
+    """, (session["user_id"],))
+    filas = cursor.fetchall()
+    conn.close()
+    # Crear un libro de Excel y una hoja.
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Gastos Mensuales"
 
-    conn.commit()
-    return redirect('/familia')
+    ws.append(["Mes", "Categoria", "Total Gastos"])
+    # Agregar filas al Excel.
+    for f in filas:
+        ws.append([
+            f["mes"],
+            f["categoria"] if f["categoria"] else "Sin categoria",
+            float(f["total_gastos"] or 0)
+        ])
+
+    archivo = BytesIO()
+    wb.save(archivo)
+    archivo.seek(0)
+
+    return send_file(
+        archivo,
+        as_attachment=True,
+        download_name="gastos_mensuales.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
 
 # =========================
 # RUN
