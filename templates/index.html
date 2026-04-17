@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/CSS/styles.css">
+    <script src="/static/js/main.js"></script>
+
+</head>
+<!--bg-light: pone un fondo blanco; 
+min-vh-100: establece la altura mínima al 100% de la ventana gráfica -->
+<body class="bg-light d-flex flex-column min-vh-100">
+<!-- flex-grow-1: hace que el elemento principal crezca para ocupar el espacio disponible entre el header y el footer -->
+<main class="flex-grow-1">
+
+    {% include 'header.html' %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="container mt-3">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+
+<div class="container-fluid mt-4 px-2 px-md-3">
+    
+    <div class="row justify-content-center">
+        <div class="col-12">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>💰 MoneyHome</h2>
+
+    </div>
+
+    <!-- RESUMEN -->
+    <div class="row text-center mb-4">
+
+        <div class="col-md-4">
+            <div class="card bg-success text-white shadow">
+                <div class="card-body">
+                    <h5>Ingresos</h5>
+                    <h3>${{ ingresos }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card bg-danger text-white shadow">
+                <div class="card-body">
+                    <h5>Gastos</h5>
+                    <h3>${{ gastos }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card bg-primary text-white shadow">
+                <div class="card-body">
+                    <h5>Saldo</h5>
+                    <h3>${{ saldo }}</h3>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- TABLA -->
+    <div class="card shadow">
+        <div class="card-body">
+
+            <h4 class="mb-3">Movimientos</h4>
+
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <TH>Nombre</TH>
+                            <th>Tipo</th>
+                            <th>Monto</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for m in movimientos %}
+                        <tr>
+                            <td>{{ m.descripcion }}</td>
+                            <td>
+                                {% if m.tipo == 'ingreso' %}
+                                    <span class="badge bg-success">Ingreso</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Gasto</span>
+                                {% endif %}
+                            </td>
+                            <td>${{ m.monto }}</td>
+                            <td>{{ m.fecha }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+        </div>
+    </div>
+</div>
+</main>
+{% include 'footer.html' %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+setTimeout(() => {
+    const alert = document.querySelector('.alert');
+    if (alert) alert.remove();
+}, 3000);
+</script>
+</body>
+</html>
