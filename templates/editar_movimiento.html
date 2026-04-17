@@ -48,7 +48,7 @@
 
         <div class="mb-3">
             <label class="form-label">Fecha</label>
-            <input type="date" name="fecha" value="{{ movimiento.fecha }}" class="form-control">
+            <input type="date" name="fecha" value="{{ movimiento.fecha.strftime('%Y-%m-%d') if movimiento.fecha else '' }}" class="form-control">
         </div>
 
 

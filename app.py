@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, session, send_file,
 from openpyxl import Workbook
 from io import BytesIO
 import mysql.connector
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = 'secret123'
@@ -187,12 +188,13 @@ def editar_movimiento(id):
     if request.method == 'POST':
         cursor.execute("""
             UPDATE movimientos
-            SET descripcion=%s, monto=%s, categoria_id=%s
+            SET descripcion=%s, monto=%s, categoria_id=%s, fecha=%s
             WHERE id=%s AND user_id=%s
         """, (
             request.form['descripcion'],
             request.form['monto'],
             request.form['categoria_id'],
+            request.form['fecha'],
             id,
             session['user_id']
         ))
@@ -337,6 +339,46 @@ def perfil():
 # =========================
 # REPORTES
 # =========================
+
+#REPORTE GASTOS MENSUALES.
+
+    #Funcion que muentran los gastos menusuales del usuario, con su categoria y familia.
+def obtener_filas_reporte_gastos_mensuales(user_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT
+            c.nombre AS Categoria,
+            m.descripcion AS Nombre,
+            f.nombre AS Familia,
+            DATE_FORMAT(m.fecha, '%m-%Y') AS Mes,
+            m.monto AS Monto
+        FROM movimientos m
+        LEFT JOIN categorias c ON m.categoria_id = c.id
+        LEFT JOIN usuarios u ON m.user_id = u.id
+        LEFT JOIN familia f ON u.familia_id = f.id
+        WHERE m.tipo_id = 2 AND m.user_id = %s
+        ORDER BY Mes DESC
+    """, (user_id,))
+    filas = cursor.fetchall()
+    conn.close()
+    return filas
+
+# Construir un resumen de gastos por mes a partir de las filas obtenidas.
+def construir_resumen_por_mes(filas):
+    resumen = {}
+    for fila in filas:
+        monto = float(fila["Monto"] or 0)
+        mes = fila["Mes"]
+        resumen[mes] = resumen.get(mes, 0) + monto
+    # Ordenar el resumen por mes (formato MM-YYYY) de forma descendente.
+    return sorted(
+        resumen.items(),
+        key=lambda item: datetime.strptime(item[0], "%m-%Y"),
+        reverse=True
+    )
+
+# Página principal de reportes.
 @app.route("/reportes")
 def reportes():
     if "user_id" not in session:
@@ -357,41 +399,42 @@ def visualizar_reportes():
 
     return render_template("visualizar_reportes.html", reportes=reportes)
 
-# REPORTE GASTOS MENSUALES.
+# REPORTE GASTOS MENSUALES EXCEL.
 @app.route("/reporte/gastos_mensuales/excel")
 def reporte_gastos_mensuales_excel():
     if "user_id" not in session:
         return redirect("/login")
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    cursor.execute("""
-        SELECT
-            DATE_FORMAT(fecha, '%%Y-%%m') AS mes,
-            c.nombre AS categoria,
-            SUM(m.monto) AS total_gastos
-        FROM movimientos m
-        LEFT JOIN categorias c ON m.categoria_id = c.id
-        WHERE m.user_id = %s AND m.tipo_id = 2
-        GROUP BY mes, categoria
-        ORDER BY mes DESC, total_gastos DESC
-    """, (session["user_id"],))
-    filas = cursor.fetchall()
-    conn.close()
+    filas = obtener_filas_reporte_gastos_mensuales(session["user_id"])
     # Crear un libro de Excel y una hoja.
     wb = Workbook()
     ws = wb.active
     ws.title = "Gastos Mensuales"
-
-    ws.append(["Mes", "Categoria", "Total Gastos"])
-    # Agregar filas al Excel.
-    for f in filas:
+    #Nombre de las columnas.
+    ws.append(["N°", "Mes", "Nombre", "Categoria", "Familia", "Monto"])
+    resumen_por_mes = dict(construir_resumen_por_mes(filas))
+    # Traer datos de las columnas.
+    for i, f in enumerate(filas, start=1):
+        monto = float(f["Monto"] or 0)
+        mes = f["Mes"]
         ws.append([
-            f["mes"],
-            f["categoria"] if f["categoria"] else "Sin categoria",
-            float(f["total_gastos"] or 0)
+            i,
+            mes,
+            f["Nombre"],
+            f["Categoria"] if f["Categoria"] else "Sin categoria",
+            f["Familia"] if f["Familia"] else "Sin familia",
+            monto
         ])
+        ws.cell(row=ws.max_row, column=6).number_format = '#,##0'
+        resumen_por_mes[mes] = resumen_por_mes.get(mes, 0) + monto
+
+    # Resumen al final del reporte: total de gastos por mes.
+    ws.append([])
+    ws.append(["Resumen por mes"])
+    ws.append(["Mes", "Total Gastos"])
+    for mes in sorted(resumen_por_mes.keys(), reverse=True):
+        ws.append([mes, resumen_por_mes[mes]])
+        ws.cell(row=ws.max_row, column=2).number_format = '#,##0'
 
     archivo = BytesIO()
     wb.save(archivo)
