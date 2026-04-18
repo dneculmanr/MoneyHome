@@ -342,7 +342,6 @@ def perfil():
 # REPORTES
 # =========================
 
-
 # vista principal de reportes, con links a cada reporte específico.
 @app.route("/reportes")
 def reportes():
@@ -362,6 +361,107 @@ def visualizar_reportes():
     conn.close()
 
     return render_template("visualizar_reportes.html", reportes=reportes)
+
+#--------------------UTILIDAD-----------------------
+def obtener_filas_reportes_utilidad(user_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT 
+            DATE_FORMAT(fecha, '%m-%Y') AS Mes,
+            SUM(CASE WHEN tipo_id = 1 THEN monto ELSE 0 END) AS Ingresos,
+            SUM(CASE WHEN tipo_id = 2 THEN monto ELSE 0 END) AS Gastos,
+            (SUM(CASE WHEN tipo_id = 1 THEN monto ELSE 0 END) -
+             SUM(CASE WHEN tipo_id = 2 THEN monto ELSE 0 END)) AS Utilidad
+        FROM movimientos
+        WHERE user_id = %s
+        GROUP BY Mes
+        ORDER BY STR_TO_DATE(Mes, '%m-%Y') DESC
+    """, (user_id,))
+    filas = cursor.fetchall()
+    conn.close()
+    return filas
+
+# EXCEL
+
+@app.route("/reporte/utilidad/excel")
+def reporte_utilidad_excel():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    filas = obtener_filas_reportes_utilidad(session["user_id"])
+    # Crear un libro de Excel y una hoja.
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Utilidad Mensual"
+
+    # Primera fila vacía para que el encabezado inicie en B2.
+    ws.append(["","", "Reporte de Utilidad Mensual"])
+    ws.cell(row=ws.max_row, column=3).font = Font(size=16, bold=True)
+    ws.append([])
+    ws.append(["","Usuario:", session.get("usuario_nombre", "Desconocido"),"","Generado el:", datetime.now().strftime("%d-%m-%Y %H:%M")]) # Fecha de generación del reporte
+    ws.append(["", "N°", "Mes", "Gastos", "Ingresos", "Utilidad"])
+    header_row = ws.max_row
+
+    resumen_por_mes = {f["Mes"]: float(f.get("Utilidad") or 0) for f in filas if f.get("Mes")}
+
+    # Datos desde B3.
+    for i, f in enumerate(filas, start=1):
+        mes = f.get("Mes")
+        gastos = float(f.get("Gastos") or 0)
+        ingresos = float(f.get("Ingresos") or 0)
+        utilidad = float(f.get("Utilidad") or 0)
+        ws.append([
+            "",
+            i,
+            mes,
+            gastos,
+            ingresos,
+            utilidad
+        ])
+        ws.cell(row=ws.max_row, column=4).number_format = '#,##0'
+        ws.cell(row=ws.max_row, column=5).number_format = '#,##0'
+        ws.cell(row=ws.max_row, column=6).number_format = '#,##0'
+
+    # Convertir bloque principal en tabla (encabezado + datos).
+    end_row = ws.max_row
+    tabla = Table(displayName="TablaUtilidad", ref=f"B{header_row}:F{end_row}")
+    tabla.tableStyleInfo = TableStyleInfo(
+        name="TableStyleLight8", # Estilo de tabla.
+        showFirstColumn=False,
+        showLastColumn=False,
+        showRowStripes=True,
+        showColumnStripes=False
+    )
+    ws.add_table(tabla)
+
+    # Resumen al final del reporte: total de gastos por mes.
+    ws.append([])
+    ws.append([])
+    ws.append(["Resumen del mes en curso:"])
+    for celda in ws[ws.max_row]:
+        celda.font = Font(size=14, bold=True)
+    ws.append(["Mes", "Total Utilidad"])
+    fila = ws.max_row
+    ws.cell(row=fila, column=1).font = Font(bold=True)
+    ws.cell(row=fila, column=2).font = Font(bold=True)
+    mes_actual = datetime.now().strftime("%m-%Y")
+    total_mes_actual = resumen_por_mes.get(mes_actual, 0)
+    ws.append([mes_actual, total_mes_actual])
+    ws.cell(row=ws.max_row, column=2).number_format = '#,##0'
+
+    #Guardar el libro de Excel en BytesIO.
+    archivo = BytesIO()
+    wb.save(archivo)
+    archivo.seek(0)
+
+    # Descargar el archivo excel.
+    return send_file(
+        archivo,
+        as_attachment=True,
+        download_name="Utilidad.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 
 #------------REPORTE GASTOS MENSUALES------------------
@@ -451,9 +551,9 @@ def reporte_gastos_mensuales_excel():
         ws.cell(row=ws.max_row, column=7).number_format = '#,##0'
         resumen_por_mes[mes] = resumen_por_mes.get(mes, 0) + monto
 
-    # Convertir bloque principal en tabla (encabezado + datos).
+    # Convertir datos en tabla (Titulos + datos).
     end_row = ws.max_row
-    tabla = Table(displayName="TablaGastos", ref=f"B{header_row}:G{end_row}")
+    tabla = Table(displayName="TablaUtilidad", ref=f"B{header_row}:G{end_row}")
     tabla.tableStyleInfo = TableStyleInfo(
         name="TableStyleLight8", # Estilo de tabla.
         showFirstColumn=False,
