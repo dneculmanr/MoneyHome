@@ -28,7 +28,7 @@
                 <span>Utilidad</span>
                 <div>
                     <a href="/reporte/utilidad/excel" class="btn btn-primary">Excel</a>
-                    <a href="{{ url_for('reporte_pdf') }}" class="btn btn-secondary">PDF</a>
+                    <a href="{{ url_for('reporte_utilidad_pdf') }}" class="btn btn-secondary">PDF</a>
                 </div>
             </li>
 
@@ -36,7 +36,7 @@
                 <span>Gastos mensuales</span>
                 <div>
                     <a href="/reporte/gastos_mensuales/excel" class="btn btn-primary">Excel</a>
-                    <a href="_" class="btn btn-secondary">PDF</a>
+                    <a href="{{ url_for('reporte_gastos_mensuales_pdf') }}" class="btn btn-secondary">PDF</a>
                 </div>
             </li>
 
@@ -44,7 +44,7 @@
                 <span>Ingresos mensuales</span>
                 <div>
                     <a href="/reporte/ingresos_mensuales/excel" class="btn btn-primary">Excel</a>
-                    <a class="btn btn-secondary disabled">PDF</a>
+                    <a href="{{ url_for('reporte_ingresos_mensuales_pdf') }}" class="btn btn-secondary">PDF</a>
                 </div>
             </li>
 

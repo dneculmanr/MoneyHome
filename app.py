@@ -24,6 +24,9 @@ def get_db_connection():
         database="moneyhome"
     )
 
+def formatear_miles(valor):
+    return f"{float(valor):,.0f}".replace(",", ".")
+
 # =========================
 # LOGIN
 # =========================
@@ -483,7 +486,7 @@ def reporte_utilidad_excel():
 # PDF
 
 @app.route("/reporte/utilidad/pdf")
-def reporte_pdf():
+def reporte_utilidad_pdf():
     if "user_id" not in session:
         return redirect("/login")
 
@@ -524,9 +527,9 @@ def reporte_pdf():
         datos_tabla.append([
             str(i),
             mes,
-            f"{gastos:,.0f}",
-            f"{ingresos:,.0f}",
-            f"{utilidad:,.0f}",
+            formatear_miles(gastos),
+            formatear_miles(ingresos),
+            formatear_miles(utilidad),
         ])
     # Crear la tabla PDF con los datos.
     tabla = PdfTable(datos_tabla, repeatRows=1)
@@ -539,7 +542,7 @@ def reporte_pdf():
     elementos.append(Spacer(1, 12))
     elementos.append(Paragraph("Resumen del mes en curso", styles["Heading3"]))
     elementos.append(Paragraph(f"Mes: {mes_actual}", styles["Normal"]))
-    elementos.append(Paragraph(f"Total utilidad: {utilidad_mes_actual:,.0f}", styles["Normal"]))
+    elementos.append(Paragraph(f"Total utilidad: {formatear_miles(utilidad_mes_actual)}", styles["Normal"]))
 
     doc.build(elementos)
     archivo.seek(0)
@@ -677,6 +680,89 @@ def reporte_gastos_mensuales_excel():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
+# PDF
+
+
+@app.route("/reporte/gastos_mensuales/pdf")
+def reporte_gastos_mensuales_pdf():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    filas = obtener_filas_reporte_gastos_mensuales(session["user_id"])
+    archivo = BytesIO()
+
+    # Crear el documento PDF con ReportLab.
+    doc = SimpleDocTemplate(
+        archivo,
+        pagesize=A4,
+        rightMargin=24,
+        leftMargin=24,
+        topMargin=24,
+        bottomMargin=24,
+    )
+    # Crear estilos y elementos para el PDF.
+    styles = getSampleStyleSheet()
+    elementos = [
+        Paragraph("Reporte de Gastos Mensuales", styles["Title"]),
+        Paragraph(f"Usuario: {session.get('usuario_nombre', 'Desconocido')}", styles["Normal"]),
+        Paragraph(f"Generado el: {datetime.now().strftime('%d-%m-%Y %H:%M')}", styles["Normal"]),
+        Spacer(1, 12),
+    ]
+    # Titulos de la tabla.
+    datos_tabla = [["N°", "Mes", "Nombre", "Categoria", "Familia", "Monto"]]
+    resumen_por_mes = {}
+    # Datos de la tabla.
+    for i, fila in enumerate(filas, start=1):
+        mes = fila.get("Mes") or "-"
+        nombre = str(fila.get("Nombre") or "-")
+        categoria = str(fila.get("Categoria") or "")
+        familia = str(fila.get("Familia") or "")
+        monto = float(fila.get("Monto") or 0)
+
+        if mes != "-":
+            resumen_por_mes[mes] = resumen_por_mes.get(mes, 0) + monto
+
+        # Agregar fila a los datos de la tabla.
+        datos_tabla.append([
+            str(i),
+            mes,
+            nombre,
+            categoria,
+            familia,
+            formatear_miles(monto),
+        ])
+    # Crear la tabla PDF con los datos.
+    tabla = PdfTable(datos_tabla, repeatRows=1)
+    tabla.setStyle(PdfTableStyle([
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+    ]))
+
+    # Aplicar diseño a la tabla.
+    elementos.append(tabla)
+    elementos.append(Spacer(1, 12))
+    elementos.append(Paragraph("Resumen por mes", styles["Heading3"]))
+    # Construir una tabla con el resumen de gastos por mes.
+    resumen_tabla = [["Mes", "Total Gastos"]]
+    for mes in sorted((m for m in resumen_por_mes.keys() if m), reverse=True):
+        resumen_tabla.append([mes, formatear_miles(resumen_por_mes[mes])])
+
+    tabla_resumen = PdfTable(resumen_tabla, repeatRows=1)
+    tabla_resumen.setStyle(PdfTableStyle([
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+    ]))
+    elementos.append(tabla_resumen)
+
+    doc.build(elementos)
+    archivo.seek(0)
+
+    return send_file(
+        archivo,
+        as_attachment=True,
+        download_name="Gastos.pdf",
+        mimetype="application/pdf",
+    )
+
+
 
 #------------REPORTE INGRESOS MENSUALES------------------
 
@@ -780,6 +866,88 @@ def reporte_ingresos_mensuales_excel():
         download_name="Ingresos_mensuales.xlsx",
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
+# PDF
+
+@app.route("/reporte/ingresos_mensuales/pdf")
+def reporte_ingresos_mensuales_pdf():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    filas = obtener_filas_reporte_ingresos_mensuales(session["user_id"])
+    archivo = BytesIO()
+
+    # Crear el documento PDF con ReportLab.
+    doc = SimpleDocTemplate(
+        archivo,
+        pagesize=A4,
+        rightMargin=24,
+        leftMargin=24,
+        topMargin=24,
+        bottomMargin=24,
+    )
+    # Crear estilos y elementos para el PDF.
+    styles = getSampleStyleSheet()
+    elementos = [
+        Paragraph("Reporte de Ingresos Mensuales", styles["Title"]),
+        Paragraph(f"Usuario: {session.get('usuario_nombre', 'Desconocido')}", styles["Normal"]),
+        Paragraph(f"Generado el: {datetime.now().strftime('%d-%m-%Y %H:%M')}", styles["Normal"]),
+        Spacer(1, 12),
+    ]
+    # Titulos de la tabla.
+    datos_tabla = [["N°", "Mes", "Nombre", "Categoria", "Familia", "Monto"]]
+    resumen_por_mes = {}
+    # Datos de la tabla.
+    for i, fila in enumerate(filas, start=1):
+        mes = fila.get("Mes") or "-"
+        nombre = str(fila.get("Nombre") or "-")
+        categoria = str(fila.get("Categoria") or "")
+        familia = str(fila.get("Familia") or "")
+        monto = float(fila.get("Monto") or 0)
+
+        if mes != "-":
+            resumen_por_mes[mes] = resumen_por_mes.get(mes, 0) + monto
+
+        # Agregar fila a los datos de la tabla.
+        datos_tabla.append([
+            str(i),
+            mes,
+            nombre,
+            categoria,
+            familia,
+            formatear_miles(monto),
+        ])
+    # Crear la tabla PDF con los datos.
+    tabla = PdfTable(datos_tabla, repeatRows=1)
+    tabla.setStyle(PdfTableStyle([
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+    ]))
+
+    # Aplicar diseño a la tabla.
+    elementos.append(tabla)
+    elementos.append(Spacer(1, 12))
+    elementos.append(Paragraph("Resumen por mes", styles["Heading3"]))
+    # Construir una tabla con el resumen de ingresos por mes.
+    resumen_tabla = [["Mes", "Total Ingresos"]]
+    for mes in sorted((m for m in resumen_por_mes.keys() if m), reverse=True):
+        resumen_tabla.append([mes, formatear_miles(resumen_por_mes[mes])])
+
+    tabla_resumen = PdfTable(resumen_tabla, repeatRows=1)
+    tabla_resumen.setStyle(PdfTableStyle([
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+    ]))
+    elementos.append(tabla_resumen)
+
+    doc.build(elementos)
+    archivo.seek(0)
+
+    return send_file(
+        archivo,
+        as_attachment=True,
+        download_name="Ingresos_mensuales.pdf",
+        mimetype="application/pdf",
+    )
+
 
 # =========================
 # RUN
