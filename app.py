@@ -5,6 +5,10 @@ from openpyxl.styles import Font
 from io import BytesIO
 import mysql.connector
 from datetime import datetime
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Table as PdfTable, TableStyle as PdfTableStyle, Paragraph, Spacer
 
 app = Flask(__name__)
 app.secret_key = 'secret123'
@@ -362,6 +366,19 @@ def visualizar_reportes():
 
     return render_template("visualizar_reportes.html", reportes=reportes)
 
+#Visualizar reporte en PDF.
+@app.route("/reportes/visualizar/pdf")
+def visualizar_reportes_pdf():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    conn.close()
+
+    return render_template("visualizar_reportes_pdf.html", reportes=reportes)
+
 #--------------------UTILIDAD-----------------------
 def obtener_filas_reportes_utilidad(user_id):
     conn = get_db_connection()
@@ -463,6 +480,76 @@ def reporte_utilidad_excel():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
+# PDF
+
+@app.route("/reporte/utilidad/pdf")
+def reporte_pdf():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    filas = obtener_filas_reportes_utilidad(session["user_id"])
+    archivo = BytesIO()
+
+    # Crear el documento PDF con ReportLab.
+    doc = SimpleDocTemplate(
+        archivo,
+        pagesize=A4,
+        rightMargin=24,
+        leftMargin=24,
+        topMargin=24,
+        bottomMargin=24,
+    )
+    # Crear estilos y elementos para el PDF.
+    styles = getSampleStyleSheet()
+    elementos = [
+        Paragraph("Reporte de Utilidad Mensual", styles["Title"]),
+        Paragraph(f"Usuario: {session.get('usuario_nombre', 'Desconocido')}", styles["Normal"]),
+        Paragraph(f"Generado el: {datetime.now().strftime('%d-%m-%Y %H:%M')}", styles["Normal"]),
+        Spacer(1, 12),
+    ]
+    # Titulos de la tabla.
+    datos_tabla = [["N°", "Mes", "Gastos", "Ingresos", "Utilidad"]]
+    utilidad_mes_actual = 0.0
+    mes_actual = datetime.now().strftime("%m-%Y")
+    # Datos de la tabla.
+    for i, fila in enumerate(filas, start=1):
+        mes = fila.get("Mes") or "-"
+        gastos = float(fila.get("Gastos") or 0)
+        ingresos = float(fila.get("Ingresos") or 0)
+        utilidad = float(fila.get("Utilidad") or 0)
+
+        if mes == mes_actual:
+            utilidad_mes_actual = utilidad
+        # Agregar fila a los datos de la tabla.
+        datos_tabla.append([
+            str(i),
+            mes,
+            f"{gastos:,.0f}",
+            f"{ingresos:,.0f}",
+            f"{utilidad:,.0f}",
+        ])
+    # Crear la tabla PDF con los datos.
+    tabla = PdfTable(datos_tabla, repeatRows=1)
+    tabla.setStyle(PdfTableStyle([
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+    ]))
+
+    # Aplicar diseño a la tabla.
+    elementos.append(tabla)
+    elementos.append(Spacer(1, 12))
+    elementos.append(Paragraph("Resumen del mes en curso", styles["Heading3"]))
+    elementos.append(Paragraph(f"Mes: {mes_actual}", styles["Normal"]))
+    elementos.append(Paragraph(f"Total utilidad: {utilidad_mes_actual:,.0f}", styles["Normal"]))
+
+    doc.build(elementos)
+    archivo.seek(0)
+
+    return send_file(
+        archivo,
+        as_attachment=True,
+        download_name="Utilidad.pdf",
+        mimetype="application/pdf",
+    )
 
 #------------REPORTE GASTOS MENSUALES------------------
 

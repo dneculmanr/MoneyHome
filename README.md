@@ -200,6 +200,10 @@ Incluye:
 * Categorías
 * Balance total
 
+## Para la descarga de reportes debe ejecurar
+
+python -m pip install reportlab
+
 ---
 
 ## 🧪 Notas
