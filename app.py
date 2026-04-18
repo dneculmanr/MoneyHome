@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, redirect, session, send_file, flash
 from openpyxl import Workbook
+from openpyxl.worksheet.table import Table, TableStyleInfo
+from openpyxl.styles import Font
 from io import BytesIO
 import mysql.connector
 from datetime import datetime
@@ -340,9 +342,9 @@ def perfil():
 # REPORTES
 # =========================
 
-#REPORTE GASTOS MENSUALES.
+#------------REPORTE GASTOS MENSUALES------------------
 
-    #Funcion que muentran los gastos menusuales del usuario, con su categoria y familia.
+#Funcion que muentran los gastos menusuales del usuario, con su categoria y familia.
 def obtener_filas_reporte_gastos_mensuales(user_id):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -378,7 +380,7 @@ def construir_resumen_por_mes(filas):
         reverse=True
     )
 
-# Página principal de reportes.
+# vista principal de reportes, con links a cada reporte específico.
 @app.route("/reportes")
 def reportes():
     if "user_id" not in session:
@@ -394,12 +396,13 @@ def visualizar_reportes():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-
     conn.close()
 
     return render_template("visualizar_reportes.html", reportes=reportes)
 
-# REPORTE GASTOS MENSUALES EXCEL.
+
+# EXCEL
+
 @app.route("/reporte/gastos_mensuales/excel")
 def reporte_gastos_mensuales_excel():
     if "user_id" not in session:
@@ -410,14 +413,23 @@ def reporte_gastos_mensuales_excel():
     wb = Workbook()
     ws = wb.active
     ws.title = "Gastos Mensuales"
-    #Nombre de las columnas.
-    ws.append(["N°", "Mes", "Nombre", "Categoria", "Familia", "Monto"])
+
+    # Primera fila vacía para que el encabezado inicie en B2.
+    ws.append(["","", "Reporte de Gastos Mensuales"])
+    ws.cell(row=ws.max_row, column=3).font = Font(size=16, bold=True)
+    ws.append([])
+    ws.append(["","Usuario:", session.get("usuario_nombre", "Desconocido"),"","Generado el:", datetime.now().strftime("%d-%m-%Y %H:%M")]) # Fecha de generación del reporte
+    ws.append(["", "N°", "Mes", "Nombre", "Categoria", "Familia", "Monto"])
+    header_row = ws.max_row
+
     resumen_por_mes = dict(construir_resumen_por_mes(filas))
-    # Traer datos de las columnas.
+
+    # Datos desde B3.
     for i, f in enumerate(filas, start=1):
         monto = float(f["Monto"] or 0)
         mes = f["Mes"]
         ws.append([
+            "",
             i,
             mes,
             f["Nombre"],
@@ -425,25 +437,45 @@ def reporte_gastos_mensuales_excel():
             f["Familia"] if f["Familia"] else "Sin familia",
             monto
         ])
-        ws.cell(row=ws.max_row, column=6).number_format = '#,##0'
+        ws.cell(row=ws.max_row, column=7).number_format = '#,##0'
         resumen_por_mes[mes] = resumen_por_mes.get(mes, 0) + monto
+
+    # Convertir bloque principal en tabla (encabezado + datos).
+    end_row = ws.max_row
+    tabla = Table(displayName="TablaGastos", ref=f"B{header_row}:G{end_row}")
+    tabla.tableStyleInfo = TableStyleInfo(
+        name="TableStyleLight8", # Estilo de tabla.
+        showFirstColumn=False,
+        showLastColumn=False,
+        showRowStripes=True,
+        showColumnStripes=False
+    )
+    ws.add_table(tabla)
 
     # Resumen al final del reporte: total de gastos por mes.
     ws.append([])
-    ws.append(["Resumen por mes"])
+    ws.append([])
+    ws.append(["Resumen por mes:"])
+    for celda in ws[ws.max_row]:
+        celda.font = Font(size=14, bold=True)
     ws.append(["Mes", "Total Gastos"])
+    fila = ws.max_row
+    ws.cell(row=fila, column=1).font = Font(bold=True)
+    ws.cell(row=fila, column=2).font = Font(bold=True)
     for mes in sorted(resumen_por_mes.keys(), reverse=True):
         ws.append([mes, resumen_por_mes[mes]])
         ws.cell(row=ws.max_row, column=2).number_format = '#,##0'
 
+    #Guardar el libro de Excel en BytesIO.
     archivo = BytesIO()
     wb.save(archivo)
     archivo.seek(0)
 
+    # Descargar el archivo excel.
     return send_file(
         archivo,
         as_attachment=True,
-        download_name="gastos_mensuales.xlsx",
+        download_name="Gastos_mensuales.xlsx",
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
