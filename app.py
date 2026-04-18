@@ -349,6 +349,8 @@ def perfil():
 # REPORTES
 # =========================
 
+#Endpoint genericos para reportes.
+
 # vista principal de reportes, con links a cada reporte específico.
 @app.route("/reportes")
 def reportes():
@@ -443,7 +445,7 @@ def reporte_utilidad_excel():
         ws.cell(row=ws.max_row, column=5).number_format = '#,##0'
         ws.cell(row=ws.max_row, column=6).number_format = '#,##0'
 
-    # Convertir bloque principal en tabla (encabezado + datos).
+    # Convertir en tabla (encabezado y datos).
     end_row = ws.max_row
     tabla = Table(displayName="TablaUtilidad", ref=f"B{header_row}:F{end_row}")
     tabla.tableStyleInfo = TableStyleInfo(
