@@ -184,7 +184,27 @@ def mov(tipo=None):
 
     movimientos = cursor.fetchall()
 
-    return render_template('mov.html', movimientos=movimientos, categorias=categorias, tipo=tipo)
+    # Ingresos disponibles para poblar los selectores de transferencia.
+    cursor.execute("""
+        SELECT m.id, m.descripcion, m.monto, m.fecha, u.nombre AS usuario
+        FROM movimientos m
+        LEFT JOIN usuarios u ON m.user_id = u.id
+        WHERE m.tipo_id = 1
+          AND (m.user_id=%s 
+           OR u.familia_id = (
+                SELECT familia_id FROM usuarios WHERE id = %s
+           ))
+        ORDER BY m.fecha DESC, m.id DESC
+    """, (session['user_id'], session['user_id']))
+    ingresos_transferencia = cursor.fetchall()
+
+    return render_template(
+        'mov.html',
+        movimientos=movimientos,
+        categorias=categorias,
+        tipo=tipo,
+        ingresos_transferencia=ingresos_transferencia
+    )
 
 # =========================
 # EDITAR MOVIMIENTO

@@ -41,4 +41,28 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    // ===== TRANSFERENCIAS: SALDO DESTINO CALCULADO =====
+    const montoTransferenciaOrigen = document.getElementById("monto_transferencia_origen");
+    const ingresoDestinoSelect = document.getElementById("ingreso_destino_id");
+    const saldoDestinoNuevo = document.getElementById("saldo_destino_nuevo");
+
+    function calcularSaldoDestinoNuevo() {
+        if (!montoTransferenciaOrigen || !ingresoDestinoSelect || !saldoDestinoNuevo) {
+            return;
+        }
+
+        const montoTransferido = parseFloat(montoTransferenciaOrigen.value) || 0;
+        const opcionSeleccionada = ingresoDestinoSelect.options[ingresoDestinoSelect.selectedIndex];
+        const saldoActualDestino = opcionSeleccionada ? (parseFloat(opcionSeleccionada.dataset.monto) || 0) : 0;
+        const saldoActualizado = saldoActualDestino + montoTransferido;
+
+        saldoDestinoNuevo.textContent = "$" + saldoActualizado.toFixed(2);
+    }
+
+    if (montoTransferenciaOrigen && ingresoDestinoSelect && saldoDestinoNuevo) {
+        montoTransferenciaOrigen.addEventListener("input", calcularSaldoDestinoNuevo);
+        ingresoDestinoSelect.addEventListener("change", calcularSaldoDestinoNuevo);
+        calcularSaldoDestinoNuevo();
+    }
+
 });

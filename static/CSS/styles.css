@@ -175,3 +175,32 @@ color: #0d6efd;
   height: 50px;
   object-fit: contain;
 }
+
+/* Flecha de transferencia */
+.transfer-arrow {
+  display: inline-flex; 
+  align-items: center;
+  justify-content: center; 
+  border: none;
+  border-radius: 50%;
+  color: #0f0f0f;
+  font-size: 50px; 
+}
+/* Flecha hacia abajo*/
+.transfer-arrow::before {
+  content: "\2193";
+}
+
+/* Casilla donde se muetra la flecha y botón */
+.transfer-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+/* boton transferencia - Adaptación para pantallas pequeñas */
+@media (max-width: 576px) {
+  .transfer-action-row {
+    flex-direction: column;
+  }
+}

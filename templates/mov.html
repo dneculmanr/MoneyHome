@@ -23,10 +23,10 @@
 <!--CREAR MOVIMIENTOS-->
     <div class="card p-4 shadow-sm">
         <h3>Crear Movimiento</h3>
-
+    
         <form method="POST">
             <div class="row g-3">
-
+                
                 <div class="col-12">
                     <label class="form-label">Descripción</label>
                     <input name="descripcion" type="text" class="form-control" required>
@@ -71,6 +71,54 @@
 
     {% else %}
 
+    <!--TRANSFERENCIAS-->
+    {% if tipo == 'transferencias' %}
+    <div class="card p-4 shadow-sm mb-3">
+        <h5 class="mb-3">Seleccionar ingresos para la transferencia</h5>
+        <!--Cuenta de origen-->
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Ingreso origen</label>
+                <select class="form-select" name="ingreso_origen_id" id="ingreso_origen_id">
+                    <option value="">Selecciona un ingreso</option>
+                    {% for ingreso in ingresos_transferencia %}
+                        <option value="{{ ingreso.id }}" data-monto="{{ ingreso.monto }}">{{ ingreso.descripcion }} - ${{ "%.2f"|format(ingreso.monto) }}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">Selecciona el ingreso del cual se descontará el monto a transferir.</div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Monto a transferir</label>
+                <input type="number" name="monto_transferencia_origen" class="form-control" id="monto_transferencia_origen">
+            </div>
+        </div>
+        <!--Botón de transferencia-->
+        <div class="transfer-action-row mb-3">
+            <span class="transfer-arrow" aria-hidden="true"></span>
+            <button type="button" class="btn btn-primary" id="btnTransferencia">Transferir</button>
+        </div>
+        <!--Cta. destino-->
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Ingreso destino</label>
+                <select class="form-select" name="ingreso_destino_id" id="ingreso_destino_id">
+                    <option value="">Selecciona un ingreso</option>
+                    {% for ingreso in ingresos_transferencia %}
+                        <option value="{{ ingreso.id }}" data-monto="{{ ingreso.monto }}">{{ ingreso.descripcion }} - ${{ "%.2f"|format(ingreso.monto) }}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">Selecciona el ingreso del cual se aumentara el monto a transferir.</div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Nuevo saldo </label>
+                <div class="form-control bg-light" id="saldo_destino_nuevo">$0</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- TABLA DE MOVIMIENTOS -->
     <div class="card shadow">
         <div class="card-body">
 
