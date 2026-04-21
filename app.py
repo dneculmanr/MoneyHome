@@ -244,8 +244,13 @@ def editar_movimiento(id):
 # =========================
 # EDITAR ELIMNAR MOVIMIENTO
 # =========================
+
+# Endpoint para mostrar la confirmación de eliminación de un movimiento.
 @app.route('/mov/eliminar/<int:id>', methods=['GET'])
 def confirmar_eliminar_movimiento(id):
+    if 'user_id' not in session:
+        return redirect('/login')
+    
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
@@ -254,8 +259,12 @@ def confirmar_eliminar_movimiento(id):
 
     return render_template('confirmar_eliminar_movimiento.html', movimiento=movimiento)
 
+# Endpoint para eliminar el movimiento después de la confirmación.
 @app.route('/mov/eliminar', methods=['POST'])
 def eliminar_movimiento():
+    if 'user_id' not in session:
+        return redirect('/login')
+    
     id = request.form['id']
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -266,9 +275,20 @@ def eliminar_movimiento():
     return redirect('/mov')
 
 
+# =========================
+# MOVIMIENTOS DE TRANSFERENCIA
+# =========================
 
+@app.route('/mov/transferencia', methods=['POST'])
+def crear_transferencia():
+    if user_id not in session:
+        return redirect('/login')
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
-
+#    # Para crear transferencia hay que quitar saldo del INGRESO_ORIGEN a INGRESO_DESTINO.
+#    cursor.execute(
+#       "UPDATE movimientos SET monto = monto - %s WHERE id = %s AND user_id = %s AND tipo_id = 1",
 
 
 
