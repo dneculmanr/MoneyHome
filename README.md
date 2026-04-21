@@ -91,6 +91,8 @@ CREATE TABLE tipo_movimiento (
     nombre VARCHAR(20)
 );
 
+
+
 CREATE TABLE movimientos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
@@ -107,6 +109,36 @@ CREATE TABLE movimientos (
 ALTER TABLE usuarios
 ADD CONSTRAINT fk_familia
 FOREIGN KEY (familia_id) REFERENCES familia(id);
+
+
+-----------NUEVO---------------------
+
+
+CREATE TABLE tipo_cuenta ( 
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) UNIQUE
+);
+
+CREATE TABLE tipo_banco ( 
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) UNIQUE
+);
+
+CREATE TABLE banco (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    tipo_banco_id INT NOT NULL,
+    tipo_cuenta_id INT NOT NULL,
+    nombre_banco VARCHAR(100) NOT NULL,
+    saldo_inicial DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES usuarios(id),
+    FOREIGN KEY (tipo_banco_id) REFERENCES tipo_banco(id),
+    FOREIGN KEY (tipo_cuenta_id) REFERENCES tipo_cuenta(id)
+);
+
+ALTER TABLE movimientos
+ADD COLUMN banco_id INT NOT NULL,
+ADD CONSTRAINT fk_mov_banco FOREIGN KEY (banco_id) REFERENCES banco(id);
 ```
 
 ---
@@ -125,6 +157,29 @@ INSERT INTO tipo_movimiento (nombre) VALUES
 ('ingreso'),
 ('gasto'),
 ('transferencia');
+
+---------------NUEVO------------------------
+
+INSERT INTO tipo_cuenta (nombre) VALUES
+('Cuenta Corriente'),
+('Cuenta de Ahorro'),
+('Cuenta Vista'),
+('Cuenta RUT');
+
+INSERT INTO tipo_banco (nombre) VALUES
+('Banco de Chile'),
+('BancoEstado'),
+('Banco BCI'),
+('Banco Santander Chile'),
+('Banco Itaú Chile'),
+('Scotiabank Chile'),
+('Banco Security'),
+('Banco Ripley'),
+('Banco Falabella'),
+('Banco Consorcio'),
+('Banco Internacional'),
+('Banco BTG Pactual Chile'),
+('Banco Coopeuch');  
 ```
 
 ---
