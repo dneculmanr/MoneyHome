@@ -168,7 +168,7 @@ def mov(tipo=None):
         filtro = "AND m.tipo_id=2"
     elif tipo == 'transferencias':
         filtro = "AND m.tipo_id=3"
-
+    # mostrar solo los movimientos del usuario y su familia (si tiene)
     cursor.execute(f"""
         SELECT m.*, c.nombre AS categoria, t.nombre AS tipo, u.nombre AS usuario
         FROM movimientos m
@@ -221,6 +221,36 @@ def editar_movimiento(id):
         movimiento=movimiento,
         categorias=categorias
     )
+# =========================
+# EDITAR ELIMNAR MOVIMIENTO
+# =========================
+@app.route('/mov/eliminar/<int:id>', methods=['GET'])
+def confirmar_eliminar_movimiento(id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM movimientos WHERE id=%s",(id,))
+    movimiento = cursor.fetchone()
+
+    return render_template('confirmar_eliminar_movimiento.html', movimiento=movimiento)
+
+@app.route('/mov/eliminar', methods=['POST'])
+def eliminar_movimiento():
+    id = request.form['id']
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM movimientos WHERE id=%s AND user_id=%s",(id,session['user_id']))
+    conn.commit()
+
+    return redirect('/mov')
+
+
+
+
+
+
+
 
 # =========================
 # CATEGORIAS
