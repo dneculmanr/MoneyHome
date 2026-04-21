@@ -144,12 +144,13 @@ def mov(tipo=None):
         tipo_map = {'ingreso':1,'gasto':2,'transferencia':3}
 
         cursor.execute("""
-            INSERT INTO movimientos (user_id, monto, categoria_id, tipo_id, fecha, descripcion)
-            VALUES (%s,%s,%s,%s,%s,%s)
+            INSERT INTO movimientos (user_id, monto, categoria_id, banco_id, tipo_id, fecha, descripcion)
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
         """, (
             session['user_id'],
             request.form['monto'],
             request.form['categoria_id'],
+            request.form['banco_id'],
             tipo_map.get(request.form['tipo_movimiento']),
             request.form['fecha'],
             request.form['descripcion']
@@ -160,6 +161,17 @@ def mov(tipo=None):
 
     cursor.execute("SELECT * FROM categorias")
     categorias = cursor.fetchall()
+
+    cursor.execute(
+        """
+        SELECT id, nombre_banco AS nombre
+        FROM banco
+        WHERE user_id = %s
+        ORDER BY id DESC
+        """,
+        (session['user_id'],)
+    )
+    bancos = cursor.fetchall()
 
     filtro = ""
     if tipo == 'ingresos':
@@ -202,6 +214,7 @@ def mov(tipo=None):
         'mov.html',
         movimientos=movimientos,
         categorias=categorias,
+        bancos=bancos,
         tipo=tipo,
         ingresos_transferencia=ingresos_transferencia
     )
@@ -281,7 +294,7 @@ def eliminar_movimiento():
 
 @app.route('/mov/transferencia', methods=['POST'])
 def crear_transferencia():
-    if user_id not in session:
+    if 'user_id' not in session:
         return redirect('/login')
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -385,6 +398,71 @@ def familia():
         miembros = cursor.fetchall()
 
     return render_template('familia.html', familia=familia, miembros=miembros)
+
+# =========================
+# BANCOS
+# =========================
+# Endpoint para mostrar los bancos del usuario y un formulario para crear nuevos bancos.
+@app.route('/banco', methods=['GET'])
+@app.route('/bancos', methods=['GET'])
+def bancos():
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            """
+            SELECT id, nombre_banco AS nombre
+            FROM banco
+            WHERE user_id = %s
+            ORDER BY id DESC
+            """,
+            (session['user_id'],)
+        )
+        bancos = cursor.fetchall()
+    except mysql.connector.Error:
+        cursor.execute("SELECT id, nombre FROM bancos ORDER BY id DESC")
+        bancos = cursor.fetchall()
+
+    return render_template('banco.html', bancos=bancos)
+#crear banco.
+@app.route('/banco/crear', methods=['POST'])
+def crear_banco():
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    tipo_banco_id = request.form.get('tipo_banco_id')
+    tipo_cuenta_id = request.form.get('tipo_cuenta_id')
+    nombre_banco = request.form.get('nombre', '').strip() or 'Banco Principal'
+
+    if not tipo_banco_id:
+        cursor.execute("SELECT id FROM tipo_banco ORDER BY id ASC LIMIT 1")
+        row = cursor.fetchone()
+        tipo_banco_id = row[0] if row else None
+
+    if not tipo_cuenta_id:
+        cursor.execute("SELECT id FROM tipo_cuenta ORDER BY id ASC LIMIT 1")
+        row = cursor.fetchone()
+        tipo_cuenta_id = row[0] if row else None
+
+    if not tipo_banco_id or not tipo_cuenta_id:
+        flash("Debes cargar tipo_banco y tipo_cuenta antes de crear bancos.", "danger")
+        return redirect('/banco')
+
+    cursor.execute(
+        "INSERT INTO banco (user_id, tipo_banco_id, tipo_cuenta_id, nombre_banco, saldo_inicial) VALUES (%s, %s, %s, %s, %s)",
+        (session['user_id'], tipo_banco_id, tipo_cuenta_id, nombre_banco, 0.00)
+    )
+    conn.commit()
+
+    return redirect('/banco')
+
 
 # =========================
 # PERFIL

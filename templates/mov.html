@@ -55,6 +55,16 @@
                         {% endfor %}
                     </select>
                 </div>
+                <!--NUEVO MODULO BANCO-->
+                <div class="col-md-4">
+                    <label class="form-label">Banco</label>
+                    <select name="banco_id" class="form-select" required>
+                        <option value="">Selecciona banco</option>
+                        {% for b in bancos %}
+                            <option value="{{ b.id }}">{{ b.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
 
                 <div class="col-md-4">
                     <label class="form-label">Fecha</label>
