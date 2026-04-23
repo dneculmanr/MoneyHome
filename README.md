@@ -181,7 +181,7 @@ INSERT INTO tipo_banco (nombre) VALUES
 ('Banco BTG Pactual Chile'),
 ('Banco Coopeuch');
 
-INSERT INTO banco (user_id, tipo_banco_id, tipo_cuenta_id, nombre_banco, saldo_inicial)
+INSERT INTO banco (user_id, tipo_banco_id, tipo_cuenta_id, nombre_banco, monto)
 VALUES (1, 1, 1, 'Banco Principal', 0.00);
 ```
 
