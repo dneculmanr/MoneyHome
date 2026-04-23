@@ -130,7 +130,7 @@ CREATE TABLE banco (
     tipo_banco_id INT NOT NULL,
     tipo_cuenta_id INT NOT NULL,
     nombre_banco VARCHAR(100) NOT NULL,
-    saldo_inicial DECIMAL(10,2) NOT NULL,
+    monto DECIMAL(10,2) NOT NULL,
     FOREIGN KEY (user_id) REFERENCES usuarios(id),
     FOREIGN KEY (tipo_banco_id) REFERENCES tipo_banco(id),
     FOREIGN KEY (tipo_cuenta_id) REFERENCES tipo_cuenta(id)

@@ -195,18 +195,18 @@
                 </tbody>
 
             </table>
-            {% else %}
-
+                {% endif %}
             {% endif %}
 
         </div>
     </div>
     {% endif %}
-    {% endif %}
+
 
 
     {% if tipo is none or tipo == 'ingresos' or tipo == 'gastos' %}
-    <!-- TABLA DE MOVIMIENTOS general, ingresos y gastos -->
+
+    
     <div class="card shadow">
         <div class="card-body">
 
@@ -242,11 +242,13 @@
                             {% endif %}
                         </td>
                         <td>{{ m.usuario }}</td>
-                        <!--BOTON PAGAR-Solo para gastos-->
-                    <!--<td>
+
+                        <!--BOTON PAGO-->
+                        <!--<td>
                             {% if m.tipo == 'gasto' %}
-                                <a href="/mov/pagar/{{ m.id }}" class="btn btn-warning btn-sm">Pagar</a>
+                                <a href="/mov/pago/{{ m.id }}" class="btn btn-warning btn-sm">Pagar</a>
                             {% endif %}
+
                         </td>-->
                         <td>
                             <a href="/mov/editar/{{ m.id }}" class="btn btn-primary btn-sm">Editar</a>
@@ -257,15 +259,12 @@
 
             </table>
             {% else %}
-            <div class="alert alert-info" role="alert">
-                No hay movimientos de este tipo. <a href="/mov/crear">Crea tu primer movimiento aquí</a>
-            </div>
             {% endif %}
 
         </div>
     </div>
-    {% endif %}
 
+    {% endif %}
 
     <button class="btn btn-secondary mb-3" onclick="history.back()">← Volver</button>
 

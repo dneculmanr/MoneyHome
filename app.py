@@ -177,24 +177,25 @@ def mov(tipo=None):
         SELECT b.id,
                b.nombre_banco AS nombre,
                COALESCE(
-                   b.saldo_inicial + SUM(
+                   b.monto + SUM(
                        CASE
                            WHEN m.tipo_id = 1 THEN m.monto
                            WHEN m.tipo_id = 2 THEN -m.monto
                            ELSE 0
                        END
                    ),
-                   b.saldo_inicial
+                   b.monto
                ) AS saldo_actual
         FROM banco b
         LEFT JOIN movimientos m ON m.banco_id = b.id
         WHERE b.user_id = %s
-        GROUP BY b.id, b.nombre_banco, b.saldo_inicial
+        GROUP BY b.id, b.nombre_banco, b.monto
         ORDER BY b.id DESC
         """,
         (session['user_id'],)
     )
     bancos = cursor.fetchall()
+
 
     filtro = "AND m.tipo_id IN (1,2)"
     if tipo == 'ingresos':
@@ -259,6 +260,20 @@ def editar_movimiento(id):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
+    # Traer bancos para mostrar en el selector del formulario.
+    cursor.execute("SELECT * FROM banco WHERE user_id=%s", (session['user_id'],))
+    bancos = cursor.fetchall()
+
+    #Obtener los bancos para mostrar en el selector del formulario.
+    cursor.execute("""
+        SELECT b.id, b.nombre_banco AS nombre
+        FROM banco b
+        WHERE b.user_id = %s
+        ORDER BY b.id DESC
+    """, (session['user_id'],))
+    bancos = cursor.fetchall()
+
+    # Validar que el movimiento a editar pertenece al usuario logueado.
     if request.method == 'POST':
         cursor.execute("""
             UPDATE movimientos
@@ -284,7 +299,8 @@ def editar_movimiento(id):
 
     return render_template('editar_movimiento.html',
         movimiento=movimiento,
-        categorias=categorias
+        categorias=categorias,
+        bancos=bancos
     )
 # ==================================
 # BOTON EDITAR - ELIMNAR MOVIMIENTO
@@ -319,6 +335,38 @@ def eliminar_movimiento():
 
     return redirect('/mov')
 
+# =========================
+#           PAGO
+# =========================
+#@app.route('/mov/pagar', methods=['GET'])
+#@app.route('/mov/pagar/<int:id>', methods=['GET'])
+# def pagar(id=None):
+#    if 'user_id' not in session:
+#        return redirect('/login')
+#
+#    conn = get_db_connection()
+#    cursor = conn.cursor(dictionary=True)
+
+#    fecha_filtro = request.args.get('fecha', datetime.now().strftime('%Y-%m'))
+#    # Mostrar solo los movimientos de tipo gasto del usuario logueado, filtrados por mes.
+#    cursor.execute("""
+#        SELECT m.id, m.fecha, m.descripcion, m.monto,
+#               c.nombre AS categoria
+#        FROM movimientos m
+#        LEFT JOIN categorias c ON m.categoria_id = c.id
+#        WHERE m.user_id = %s AND m.tipo_id = 2
+#          AND DATE_FORMAT(m.fecha, '%%Y-%%m') = %s
+#        ORDER BY m.fecha DESC
+#    """, (session['user_id'], fecha_filtro))
+
+#    movimientos = cursor.fetchall()
+#    cursor.close()
+#    conn.close()
+
+#    return render_template('pago.html',
+#        movimientos=movimientos,
+#        fecha_filtro=fecha_filtro
+#   )
 
 # =========================
 # MOVIMIENTOS DE TRANSFERENCIA
@@ -337,22 +385,22 @@ def crear_transferencia():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # 1. Validar saldo suficiente en banco origen
+    # 1. Validar que el banco origen tenga saldo suficiente para la transferencia.
     cursor.execute("""
         SELECT COALESCE(
-            b.saldo_inicial + SUM(
+            b.monto + SUM(
                 CASE
                     WHEN m.tipo_id = 1 THEN m.monto
                     WHEN m.tipo_id = 2 THEN -m.monto
                     ELSE 0
                 END
             ),
-            b.saldo_inicial
+            b.monto
         ) AS saldo_actual
         FROM banco b
         LEFT JOIN movimientos m ON m.banco_id = b.id
         WHERE b.id = %s AND b.user_id = %s
-        GROUP BY b.id, b.saldo_inicial
+        GROUP BY b.id, b.monto
     """, (banco_origen, session['user_id']))
     row = cursor.fetchone()
     saldo_disponible = row[0] if row else 0
@@ -372,7 +420,7 @@ def crear_transferencia():
         fecha,
         f"Transferencia a banco {banco_destino}"
     ))
-
+    # El movimiento de destino se registra como ingreso (monto positivo) para que sume al saldo del banco destino.
     cursor.execute("""
         INSERT INTO movimientos (user_id, monto, categoria_id, banco_id, tipo_id, fecha, descripcion)
         VALUES (%s, %s, NULL, %s, 3, %s, %s)
@@ -385,9 +433,9 @@ def crear_transferencia():
     ))
 
     # 3. Actualizar saldos directamente en tabla banco
-    cursor.execute("UPDATE banco SET saldo_inicial = saldo_inicial - %s WHERE id=%s AND user_id=%s",
+    cursor.execute("UPDATE banco SET monto = monto - %s WHERE id=%s AND user_id=%s",
                    (monto, banco_origen, session['user_id']))
-    cursor.execute("UPDATE banco SET saldo_inicial = saldo_inicial + %s WHERE id=%s AND user_id=%s",
+    cursor.execute("UPDATE banco SET monto = monto + %s WHERE id=%s AND user_id=%s",
                    (monto, banco_destino, session['user_id']))
 
     conn.commit()
@@ -512,12 +560,12 @@ def banco(id=None):
 
     if id and request.method == 'POST':
         nombre_banco = request.form.get('nombre_banco', '').strip()
-        saldo_inicial = request.form.get('saldo_inicial') or 0
+        saldo_inicial = request.form.get('monto') or 0
 
         cursor.execute(
             """
             UPDATE banco
-            SET nombre_banco = %s, saldo_inicial = %s
+            SET nombre_banco = %s, monto = %s
             WHERE id = %s AND user_id = %s
             """,
             (nombre_banco, saldo_inicial, id, session['user_id'])
@@ -552,21 +600,21 @@ def bancos():
             SELECT
                 b.id,
                 b.nombre_banco AS nombre,
-                b.saldo_inicial,
+                b.monto,
                 COALESCE(
-                    b.saldo_inicial + SUM(
+                    b.monto + SUM(
                         CASE
                             WHEN m.tipo_id = 1 THEN m.monto
                             WHEN m.tipo_id = 2 THEN -m.monto
                             ELSE 0
                         END
                     ),
-                    b.saldo_inicial
+                    b.monto
                 ) AS saldo_actual
             FROM banco b
             LEFT JOIN movimientos m ON m.banco_id = b.id
             WHERE b.user_id = %s
-            GROUP BY b.id, b.nombre_banco, b.saldo_inicial
+            GROUP BY b.id, b.nombre_banco, b.monto
             ORDER BY b.id DESC
             """,
             (session['user_id'],)
@@ -599,7 +647,7 @@ def crear_banco():
         or request.form.get('comentario', '').strip()
         or 'Banco Principal'
     )
-    saldo_inicial = request.form.get('saldo_inicial') or 0
+    saldo_inicial = request.form.get('monto') or 0
     #VALIDACION: si no se envía tipo_banco_id, se asigna el primero disponible en la base de datos.
     if not tipo_banco_id:
         cursor.execute("SELECT id FROM tipo_banco ORDER BY id ASC LIMIT 1")
@@ -616,7 +664,7 @@ def crear_banco():
         return redirect('/banco')
 
     cursor.execute(
-        "INSERT INTO banco (user_id, tipo_banco_id, tipo_cuenta_id, nombre_banco, saldo_inicial) VALUES (%s, %s, %s, %s, %s)",
+        "INSERT INTO banco (user_id, tipo_banco_id, tipo_cuenta_id, nombre_banco, monto) VALUES (%s, %s, %s, %s, %s)",
         (session['user_id'], tipo_banco_id, tipo_cuenta_id, nombre_banco, saldo_inicial)
     )
     conn.commit()

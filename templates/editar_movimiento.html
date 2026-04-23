@@ -33,6 +33,19 @@
             <label class="form-label">Monto</label>
             <input type="number" name="monto" value="{{ movimiento.monto }}" class="form-control">
         </div>
+        <!--lista desplegable BANCO-->
+        <div class="mb-3">
+            <label class="form-label">Banco</label>
+            <select id="banco_origen" name="banco_origen" class="form-select">
+                {% for b in bancos %}
+                <option value="{{ b.id }}" data-saldo="{{ b.saldo_actual or 0 }}"
+                    {% if b.id == movimiento.banco_id %}selected{% endif %}>
+                    {{ b.nombre }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
 
         <div class="mb-3">
             <label class="form-label">Categoría</label>
