@@ -1,0 +1,134 @@
+GUIA RAPIDA: RESPONSIVE + BOOTSTRAP (PARA CUADRAR PANTALLAS)
+
+1) Viewport (siempre)
+En el <head> debes tener:
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+Que hace esta linea:
+- Le dice al navegador que use el ancho real del dispositivo.
+- Sin esto, en celular la pagina se ve "chiquita" como desktop escalado.
+
+2) Breakpoints de Bootstrap 5
+- xs: <576px (base)
+- sm: >=576px
+- md: >=768px
+- lg: >=992px
+- xl: >=1200px
+- xxl: >=1400px
+
+Como interpretarlo:
+- col-md-6 = desde 768px ocupa la mitad.
+- Debajo de 768px toma el valor base (si pones col-12, ocupa todo).
+
+3) Grilla de 12 columnas
+Ejemplo:
+<div class="row g-3">
+  <div class="col-12 col-md-6 col-lg-4">Bloque 1</div>
+  <div class="col-12 col-md-6 col-lg-4">Bloque 2</div>
+  <div class="col-12 col-md-12 col-lg-4">Bloque 3</div>
+</div>
+
+Lectura:
+- Movil: 1 por fila.
+- Tablet: 2 por fila.
+- Desktop: 3 por fila.
+
+4) Contenedores
+- container: centra y limita ancho maximo.
+- container-fluid: ocupa todo el ancho.
+
+Cuando usar cada uno:
+- Formularios/listados: container.
+- Tableros anchos o tablas grandes: container-fluid.
+
+5) Utilidades de maquetacion que mas se usan
+Espaciado:
+- mt-*, mb-*, ms-*, me-* (margenes)
+- pt-*, pb-*, px-*, py-* (padding)
+
+Alineacion:
+- d-flex
+- justify-content-start|center|end|between
+- align-items-start|center|end
+- text-start|center|end
+
+Responsive rapido:
+- d-none d-md-block (ocultar en movil, mostrar en md+)
+- w-100 (ancho completo)
+
+6) Formularios responsivos (patron recomendado)
+<form class="row g-3">
+  <div class="col-12 col-md-6">campo A</div>
+  <div class="col-12 col-md-6">campo B</div>
+  <div class="col-12 d-flex justify-content-end">
+    <button class="btn btn-primary">Guardar</button>
+  </div>
+</form>
+
+Por que funciona:
+- En movil se apila y se lee facil.
+- En tablet/desktop se ordena en columnas.
+
+7) Tablas en movil (obligatorio)
+Siempre envolver en:
+<div class="table-responsive">
+  <table class="table table-striped">...</table>
+</div>
+
+Si no lo haces, la tabla rompe el ancho en celular.
+
+8) Modales en Bootstrap 5
+- Abrir: data-bs-toggle="modal" data-bs-target="#miModal"
+- Cerrar: data-bs-dismiss="modal"
+- Evitar atributos viejos: data-toggle / data-dismiss.
+
+9) Orden de trabajo recomendado
+1. Construir estructura base: container + row + col.
+2. Ajustar version movil primero.
+3. Escalar a md/lg agregando columnas.
+4. Ajustar espacios (margenes/padding).
+5. Probar en 375px, 768px y 1366px.
+
+10) Errores comunes
+- Usar solo col-md-* y olvidar col-12.
+- No usar table-responsive.
+- Poner anchos fijos grandes en px.
+- Mezclar Bootstrap 4 y 5.
+- Resolver todo con CSS custom sin aprovechar utilidades.
+
+11) Mini receta para cuadrar una vista rapido
+- Encabezado: d-flex justify-content-between align-items-center
+- Filtros: row g-3 + col-12 col-md-*
+- Acciones: d-flex justify-content-end
+- Tabla: card + table-responsive + table
+- Cierre: mt-3 text-end
+
+12) Ejemplo corto de layout balanceado
+<main class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Titulo</h2>
+    <button class="btn btn-primary">Nuevo</button>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-6">...</div>
+        <div class="col-12 col-md-6">...</div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-striped">...</table>
+      </div>
+    </div>
+  </div>
+</main>
+
+Checklist final:
+- Se ve bien en 375px?
+- Se ve bien en 768px?
+- Se ve bien en desktop?
+- Ningun texto se corta?
+- Ningun boton queda fuera?
+- Tabla con scroll horizontal cuando corresponde?
+

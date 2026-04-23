@@ -143,37 +143,60 @@ def mov(tipo=None):
     if tipo == 'crear' and request.method == 'POST':
         tipo_map = {'ingreso':1,'gasto':2,'transferencia':3}
 
-        cursor.execute("""
-            INSERT INTO movimientos (user_id, monto, categoria_id, banco_id, tipo_id, fecha, descripcion)
-            VALUES (%s,%s,%s,%s,%s,%s,%s)
-        """, (
-            session['user_id'],
-            request.form['monto'],
-            request.form['categoria_id'],
-            request.form['banco_id'],
-            tipo_map.get(request.form['tipo_movimiento']),
-            request.form['fecha'],
-            request.form['descripcion']
-        ))
+        try:
+            cursor.execute("""
+                INSERT INTO movimientos (user_id, monto, categoria_id, banco_id, tipo_id, fecha, descripcion)
+                VALUES (%s,%s,%s,%s,%s,%s,%s)
+            """, (
+                session['user_id'],
+                request.form['monto'],
+                request.form['categoria_id'],
+                request.form['banco_id'],
+                tipo_map.get(request.form['tipo_movimiento']),
+                request.form['fecha'],
+                request.form['descripcion']
+            ))
 
-        conn.commit()
-        return redirect('/mov')
+            conn.commit()
+            flash('Movimiento creado exitosamente', 'success')
+            return redirect('/mov')
+        except Exception as e:
+            conn.rollback()
+            flash(f'Error al crear movimiento: {str(e)}', 'danger')
+            print(f"ERROR: {str(e)}")
+        finally:
+            cursor.close()
+            conn.close()
 
     cursor.execute("SELECT * FROM categorias")
     categorias = cursor.fetchall()
 
     cursor.execute(
+        # Para cada banco, calcular el saldo actual sumando los ingresos y restando los gastos asociados a ese banco.
         """
-        SELECT id, nombre_banco AS nombre
-        FROM banco
-        WHERE user_id = %s
-        ORDER BY id DESC
+        SELECT b.id,
+               b.nombre_banco AS nombre,
+               COALESCE(
+                   b.saldo_inicial + SUM(
+                       CASE
+                           WHEN m.tipo_id = 1 THEN m.monto
+                           WHEN m.tipo_id = 2 THEN -m.monto
+                           ELSE 0
+                       END
+                   ),
+                   b.saldo_inicial
+               ) AS saldo_actual
+        FROM banco b
+        LEFT JOIN movimientos m ON m.banco_id = b.id
+        WHERE b.user_id = %s
+        GROUP BY b.id, b.nombre_banco, b.saldo_inicial
+        ORDER BY b.id DESC
         """,
         (session['user_id'],)
     )
     bancos = cursor.fetchall()
 
-    filtro = ""
+    filtro = "AND m.tipo_id IN (1,2)"
     if tipo == 'ingresos':
         filtro = "AND m.tipo_id=1"
     elif tipo == 'gastos':
@@ -182,17 +205,22 @@ def mov(tipo=None):
         filtro = "AND m.tipo_id=3"
     # mostrar solo los movimientos del usuario y su familia (si tiene)
     cursor.execute(f"""
-        SELECT m.*, c.nombre AS categoria, t.nombre AS tipo, u.nombre AS usuario
+        SELECT m.id, m.user_id, m.banco_id, m.monto, m.categoria_id, m.tipo_id, m.fecha, m.descripcion,
+               c.nombre AS categoria,
+               CASE 
+                   WHEN m.tipo_id = 1 THEN 'ingreso'
+                   WHEN m.tipo_id = 2 THEN 'gasto'
+                   WHEN m.tipo_id = 3 THEN 'transferencia'
+                   ELSE 'otro'
+               END AS tipo,
+               u.nombre AS usuario
         FROM movimientos m
         LEFT JOIN categorias c ON m.categoria_id = c.id
-        LEFT JOIN tipo_movimiento t ON m.tipo_id = t.id
         LEFT JOIN usuarios u ON m.user_id = u.id
-        WHERE (m.user_id=%s 
-           OR u.familia_id = (
-                SELECT familia_id FROM usuarios WHERE id = %s
-           ))
+        WHERE m.user_id = %s
         {filtro}
-    """,(session['user_id'], session['user_id']))
+        ORDER BY m.fecha DESC, m.id DESC
+    """,(session['user_id'],))
 
     movimientos = cursor.fetchall()
 
@@ -210,6 +238,9 @@ def mov(tipo=None):
     """, (session['user_id'], session['user_id']))
     ingresos_transferencia = cursor.fetchall()
 
+    cursor.close()
+    conn.close()
+
     return render_template(
         'mov.html',
         movimientos=movimientos,
@@ -222,6 +253,7 @@ def mov(tipo=None):
 # =========================
 # EDITAR MOVIMIENTO
 # =========================
+#Trae los datos de la tabla MOVIMIENTOS y CATEGORIAS para mostrar en la opcion editar.
 @app.route('/mov/editar/<int:id>', methods=['GET','POST'])
 def editar_movimiento(id):
     conn = get_db_connection()
@@ -254,9 +286,9 @@ def editar_movimiento(id):
         movimiento=movimiento,
         categorias=categorias
     )
-# =========================
-# EDITAR ELIMNAR MOVIMIENTO
-# =========================
+# ==================================
+# BOTON EDITAR - ELIMNAR MOVIMIENTO
+# ==================================
 
 # Endpoint para mostrar la confirmación de eliminación de un movimiento.
 @app.route('/mov/eliminar/<int:id>', methods=['GET'])
@@ -296,12 +328,76 @@ def eliminar_movimiento():
 def crear_transferencia():
     if 'user_id' not in session:
         return redirect('/login')
+
+    banco_origen = request.form['banco_origen']
+    banco_destino = request.form['banco_destino']
+    monto = float(request.form['monto_origen_transferencia'])
+    fecha = request.form['fecha']
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
-#    # Para crear transferencia hay que quitar saldo del INGRESO_ORIGEN a INGRESO_DESTINO.
-#    cursor.execute(
-#       "UPDATE movimientos SET monto = monto - %s WHERE id = %s AND user_id = %s AND tipo_id = 1",
+    # 1. Validar saldo suficiente en banco origen
+    cursor.execute("""
+        SELECT COALESCE(
+            b.saldo_inicial + SUM(
+                CASE
+                    WHEN m.tipo_id = 1 THEN m.monto
+                    WHEN m.tipo_id = 2 THEN -m.monto
+                    ELSE 0
+                END
+            ),
+            b.saldo_inicial
+        ) AS saldo_actual
+        FROM banco b
+        LEFT JOIN movimientos m ON m.banco_id = b.id
+        WHERE b.id = %s AND b.user_id = %s
+        GROUP BY b.id, b.saldo_inicial
+    """, (banco_origen, session['user_id']))
+    row = cursor.fetchone()
+    saldo_disponible = row[0] if row else 0
+
+    if monto > saldo_disponible:
+        flash("El monto de la transferencia no puede ser mayor al saldo disponible del banco origen.", "danger")
+        return redirect('/mov/transferencia')
+
+    # 2. Insertar movimientos (origen negativo, destino positivo)
+    cursor.execute("""
+        INSERT INTO movimientos (user_id, monto, categoria_id, banco_id, tipo_id, fecha, descripcion)
+        VALUES (%s, %s, NULL, %s, 3, %s, %s)
+    """, (
+        session['user_id'],
+        -monto,
+        banco_origen,
+        fecha,
+        f"Transferencia a banco {banco_destino}"
+    ))
+
+    cursor.execute("""
+        INSERT INTO movimientos (user_id, monto, categoria_id, banco_id, tipo_id, fecha, descripcion)
+        VALUES (%s, %s, NULL, %s, 3, %s, %s)
+    """, (
+        session['user_id'],
+        monto,
+        banco_destino,
+        fecha,
+        f"Transferencia desde banco {banco_origen}"
+    ))
+
+    # 3. Actualizar saldos directamente en tabla banco
+    cursor.execute("UPDATE banco SET saldo_inicial = saldo_inicial - %s WHERE id=%s AND user_id=%s",
+                   (monto, banco_origen, session['user_id']))
+    cursor.execute("UPDATE banco SET saldo_inicial = saldo_inicial + %s WHERE id=%s AND user_id=%s",
+                   (monto, banco_destino, session['user_id']))
+
+    conn.commit()
+    conn.close()
+
+    flash("Transferencia realizada correctamente", "success")
+    return redirect('/mov')
+
+
+
 
 
 
@@ -402,8 +498,45 @@ def familia():
 # =========================
 # BANCOS
 # =========================
-# Endpoint para mostrar los bancos del usuario y un formulario para crear nuevos bancos.
+
+# Endpoint para mostrar la pagina bancos.
 @app.route('/banco', methods=['GET'])
+# Endpoint para mostrar el formulario de edición de un banco específico.
+@app.route('/banco/<int:id>', methods=['GET', 'POST'])
+def banco(id=None):
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    if id and request.method == 'POST':
+        nombre_banco = request.form.get('nombre_banco', '').strip()
+        saldo_inicial = request.form.get('saldo_inicial') or 0
+
+        cursor.execute(
+            """
+            UPDATE banco
+            SET nombre_banco = %s, saldo_inicial = %s
+            WHERE id = %s AND user_id = %s
+            """,
+            (nombre_banco, saldo_inicial, id, session['user_id'])
+        )
+        conn.commit()
+        flash("Banco actualizado correctamente", "success")
+        return redirect('/banco')
+
+    if id:
+        cursor.execute("SELECT * FROM banco WHERE id=%s AND user_id=%s",(id,session['user_id']))
+        banco = cursor.fetchone()
+        if not banco:
+            flash("Banco no encontrado", "danger")
+            return redirect('/banco')
+        return render_template('editar_banco.html', banco=banco)
+
+    return bancos()
+    
+# Endpoint para mostrar los bancos del usuario.
 @app.route('/bancos', methods=['GET'])
 def bancos():
     if 'user_id' not in session:
@@ -411,24 +544,46 @@ def bancos():
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
+    tipos_banco = []
 
     try:
         cursor.execute(
             """
-            SELECT id, nombre_banco AS nombre
-            FROM banco
-            WHERE user_id = %s
-            ORDER BY id DESC
+            SELECT
+                b.id,
+                b.nombre_banco AS nombre,
+                b.saldo_inicial,
+                COALESCE(
+                    b.saldo_inicial + SUM(
+                        CASE
+                            WHEN m.tipo_id = 1 THEN m.monto
+                            WHEN m.tipo_id = 2 THEN -m.monto
+                            ELSE 0
+                        END
+                    ),
+                    b.saldo_inicial
+                ) AS saldo_actual
+            FROM banco b
+            LEFT JOIN movimientos m ON m.banco_id = b.id
+            WHERE b.user_id = %s
+            GROUP BY b.id, b.nombre_banco, b.saldo_inicial
+            ORDER BY b.id DESC
             """,
             (session['user_id'],)
         )
         bancos = cursor.fetchall()
     except mysql.connector.Error:
-        cursor.execute("SELECT id, nombre FROM bancos ORDER BY id DESC")
+        cursor.execute("SELECT id, nombre AS nombre, saldo AS saldo_actual FROM bancos ORDER BY id DESC")
         bancos = cursor.fetchall()
 
-    return render_template('banco.html', bancos=bancos)
-#crear banco.
+    try:
+        cursor.execute("SELECT id, nombre FROM tipo_banco ORDER BY nombre ASC")
+        tipos_banco = cursor.fetchall()
+    except mysql.connector.Error:
+        tipos_banco = []
+
+    return render_template('banco.html', bancos=bancos, tipos_banco=tipos_banco)
+# Endpoint para crear un nuevo banco.
 @app.route('/banco/crear', methods=['POST'])
 def crear_banco():
     if 'user_id' not in session:
@@ -439,29 +594,67 @@ def crear_banco():
 
     tipo_banco_id = request.form.get('tipo_banco_id')
     tipo_cuenta_id = request.form.get('tipo_cuenta_id')
-    nombre_banco = request.form.get('nombre', '').strip() or 'Banco Principal'
-
+    nombre_banco = (
+        request.form.get('nombre', '').strip()
+        or request.form.get('comentario', '').strip()
+        or 'Banco Principal'
+    )
+    saldo_inicial = request.form.get('saldo_inicial') or 0
+    #VALIDACION: si no se envía tipo_banco_id, se asigna el primero disponible en la base de datos.
     if not tipo_banco_id:
         cursor.execute("SELECT id FROM tipo_banco ORDER BY id ASC LIMIT 1")
         row = cursor.fetchone()
         tipo_banco_id = row[0] if row else None
-
+    #VALIDACION: si no se envía o tipo_cuenta_id, se asigna el primero disponible en la base de datos.
     if not tipo_cuenta_id:
         cursor.execute("SELECT id FROM tipo_cuenta ORDER BY id ASC LIMIT 1")
         row = cursor.fetchone()
         tipo_cuenta_id = row[0] if row else None
-
+    #VALIDACION: mostrar mensaje de error.
     if not tipo_banco_id or not tipo_cuenta_id:
         flash("Debes cargar tipo_banco y tipo_cuenta antes de crear bancos.", "danger")
         return redirect('/banco')
 
     cursor.execute(
         "INSERT INTO banco (user_id, tipo_banco_id, tipo_cuenta_id, nombre_banco, saldo_inicial) VALUES (%s, %s, %s, %s, %s)",
-        (session['user_id'], tipo_banco_id, tipo_cuenta_id, nombre_banco, 0.00)
+        (session['user_id'], tipo_banco_id, tipo_cuenta_id, nombre_banco, saldo_inicial)
     )
     conn.commit()
 
     return redirect('/banco')
+
+@app.route('/banco/eliminar', methods=['POST'])
+def eliminar_banco():
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    banco_id = request.form.get('id')
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("DELETE FROM banco WHERE id=%s AND user_id=%s", (banco_id, session['user_id']))
+        conn.commit()
+        flash("Banco eliminado correctamente", "success")
+    except mysql.connector.Error:
+        flash("No se pudo eliminar el banco porque tiene movimientos asociados.", "danger")
+
+    return redirect('/banco')
+# =========================
+# TIPOS DE BANCO
+# =========================
+@app.route('/tipo_banco', methods=['GET'])
+def tipo_banco():
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT id, nombre FROM tipo_banco")
+    tipos_banco = cursor.fetchall()
+
+    return render_template('tipo_banco.html', tipos_banco=tipos_banco)
 
 
 # =========================

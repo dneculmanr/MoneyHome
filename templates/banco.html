@@ -11,65 +11,93 @@
 <body>
     {% include 'header.html' %}
 
+<main class="flex-grow-1 container mt-4">
     <!--BOTON CREAR BANCO-->
     <div class="container mt-4">
         <h2>Bancos</h2>
-        <div class="mb-3">
+        <div class="mb-3 d-flex justify-content-end">
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#crearBancoModal">Crear Banco +</button>
         </div>
+        <p>Aquí puedes gestionar tus bancos y ver su saldo actual.</p>
     </div>
 
     <!--MODAL BOTON CREAR BANCO-->
     <div class="modal fade" id="crearBancoModal" tabindex="-1" aria-labelledby="crearBancoModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog" role="document">
             <div class="modal-content">
-                <form method="POST" action="/banco/crear">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="crearBancoModalLabel">Crear Banco</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
+            <div class="modal-header">
+                <h5 class="modal-title" id="crearBancoModalLabel">Crear Banco</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                    <form method="POST" action="/banco/crear">
+                        <!--Tipo de banco-->
                         <div class="mb-3">
-                            <label class="form-label">Nombre del banco</label>
-                            <input name="nombre" type="text" class="form-control" placeholder="Ej: Banco Principal" required>
+                            <label class="form-label">Tipo de Banco</label>
+                            <select name="tipo_banco_id" class="form-select" required>
+                                <option value="">Selecciona un tipo</option>
+                                {% for tipo in tipos_banco %}
+                                <option value="{{ tipo.id }}">{{ tipo.nombre }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
-                        <div class="row g-2">
-                            <div class="col-md-6">
-                                <label class="form-label">Tipo Banco (ID)</label>
-                                <input name="tipo_banco_id" type="number" class="form-control" min="1" placeholder="Opcional">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Tipo Cuenta (ID)</label>
-                                <input name="tipo_cuenta_id" type="number" class="form-control" min="1" placeholder="Opcional">
-                            </div>
+                        <div class="mb-3">
+                            <label for="nombre" class="form-label">Nombre del banco</label>
+                            <input type="text" class="form-control" id="nombre" name="nombre" required>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                        <button type="submit" class="btn btn-primary">Guardar</button>
-                    </div>
-                </form>
+                        <div class="mb-3">
+                            <label for="saldo_inicial" class="form-label">Saldo inicial</label>
+                            <input type="number" step="0.01" class="form-control" id="saldo_inicial" name="saldo_inicial" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Crear</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="container mt-3">
-        <div class="list-group">
-            {% for b in bancos %}
-                <div class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>{{ b.nombre }}</span>
-                    <span class="badge bg-secondary">ID {{ b.id }}</span>
-                </div>
-            {% else %}
-                <div class="list-group-item text-muted">No hay bancos creados.</div>
-            {% endfor %}
+
+    <!--vista de los bancos-->
+    <div class="card shadow">
+            <div class="card-body">
+
+                <table class="table table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Saldo Actual</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for b in bancos %}
+                        <tr>
+                            <td>{{ b.id }}</td>
+                            <td>{{ b.nombre }}</td>
+                            <td>${{ "%.2f"|format(b.saldo_actual or 0) }}</td>
+                            <td>
+                                <a href="/banco/{{ b.id }}" class="btn btn-primary btn-sm">Editar</a>
+                            </td>
+                        </tr>
+
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">No hay bancos creados.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
-
-
+</main>
     {% include 'footer.html' %}
 
     <script src="/static/js/main.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+   
