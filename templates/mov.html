@@ -158,6 +158,52 @@
 {% endif %}
 
 
+    {% if tipo is none or tipo == 'Transferencias'%}
+    <!-- TABLA DE MOVIMIENTOS TRANSFERENCIA -->
+    <div class="card shadow">
+        <div class="card-body">
+
+            {% if banco %}
+            <table class="table table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Banco</th>
+                        <th>fecha</th>
+                        <th>Monto</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for m in movimientos %}
+                    <tr>
+                        <td>{{ b.nombre }}</td>
+                        <td>{{ b.fecha }}</td>
+                        <td>${{ "%.2f"|format(b.monto) }}</td>
+
+                        <t>
+                            {% if m.tipo == 'ingreso' %}
+                                <span class="badge bg-success">Ingreso</span>
+                            {% elif m.tipo == 'gasto' %}
+                                <span class="badge bg-danger">Gasto</span>
+                            {% else %}
+                                <span class="badge bg-primary">{{ m.tipo|title }}</span>
+                            {% endif %}
+                            <a href="/banco/editar/{{ b.id }}" class="btn btn-primary btn-sm">Editar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+            {% else %}
+
+            {% endif %}
+
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
 
     {% if tipo is none or tipo == 'ingresos' or tipo == 'gastos' %}
     <!-- TABLA DE MOVIMIENTOS general, ingresos y gastos -->
@@ -196,6 +242,12 @@
                             {% endif %}
                         </td>
                         <td>{{ m.usuario }}</td>
+                        <!--BOTON PAGAR-Solo para gastos-->
+                    <!--<td>
+                            {% if m.tipo == 'gasto' %}
+                                <a href="/mov/pagar/{{ m.id }}" class="btn btn-warning btn-sm">Pagar</a>
+                            {% endif %}
+                        </td>-->
                         <td>
                             <a href="/mov/editar/{{ m.id }}" class="btn btn-primary btn-sm">Editar</a>
                         </td>
@@ -213,7 +265,7 @@
         </div>
     </div>
     {% endif %}
-    {% endif %}
+
 
     <button class="btn btn-secondary mb-3" onclick="history.back()">← Volver</button>
 
