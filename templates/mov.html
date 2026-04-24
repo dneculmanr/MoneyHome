@@ -220,6 +220,7 @@
                         <th>Fecha</th>
                         <th>Tipo</th>
                         <th>Usuario</th>
+                        <th>Pago</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -244,12 +245,12 @@
                         <td>{{ m.usuario }}</td>
 
                         <!--BOTON PAGO-->
-                        <!--<td>
+                        <td>
                             {% if m.tipo == 'gasto' %}
                                 <a href="/mov/pago/{{ m.id }}" class="btn btn-warning btn-sm">Pagar</a>
                             {% endif %}
 
-                        </td>-->
+                        </td>
                         <td>
                             <a href="/mov/editar/{{ m.id }}" class="btn btn-primary btn-sm">Editar</a>
                         </td>

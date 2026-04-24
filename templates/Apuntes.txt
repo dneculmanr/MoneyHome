@@ -1,5 +1,49 @@
 GUIA RAPIDA: RESPONSIVE + BOOTSTRAP (PARA CUADRAR PANTALLAS)
 
+Clases principales
+
+row  
+  Es la fila del sistema de grillas de Bootstrap. Dentro de una row se colocan las columnas (col) que se van a distribuir horizontalmente.
+
+col  
+  Cada div con clase col representa una columna. Bootstrap reparte automáticamente el ancho disponible entre las columnas de la fila.
+  Ejemplo: si tienes 5 col dentro de una row, cada una ocupará 1/5 del ancho en pantallas grandes.
+
+row-cols-2  
+  Indica que en pantallas pequeñas (móvil) la fila debe tener 2 columnas por fila.
+  → Tus menús se mostrarán de a 2 en cada fila, y si son 5, quedarán 2 arriba, 2 en la segunda fila y 1 en la tercera.
+
+row-cols-md-5  
+  Indica que en pantallas medianas en adelante (tablet, escritorio) la fila debe tener 5 columnas por fila.
+  → Tus 5 menús se alinean uno al lado del otro en una sola fila.
+
+g-3  
+  Es el “gap” (espacio) entre columnas y filas. El número 3 corresponde a un tamaño de espaciado predefinido en Bootstrap.
+
+text-center  
+  Centra el contenido dentro de cada columna (texto, imágenes, títulos).
+
+Apuntes:
+    row-cols-2: se ven 2 menús por fila.
+    row-cols-md-5: se ven 5 menús por fila en pantallas medianas y grandes.
+    g-3: espacio entre columnas y filas.
+    text-center: centra el texto dentro de cada columna.
+
+RESUMEN:
+row = fila contenedora.
+
+col = columna dentro de la fila.
+
+row-cols-2 = 2 columnas por fila en pantallas pequeñas.
+
+row-cols-md-5 = 5 columnas por fila en pantallas medianas/grandes.
+
+g-3 = espacio entre columnas.
+
+text-center = centra el contenido.
+
+
+
 1) Viewport (siempre)
 En el <head> debes tener:
 <meta name="viewport" content="width=device-width, initial-scale=1.0">

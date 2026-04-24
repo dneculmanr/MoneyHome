@@ -19,39 +19,7 @@
 
     <p class="h4 mb-4">En proceso de creación</p>
 
-    <!--Filtro de fecha - Por defecto muestra el mes actual-->
-    <div class="mb-3">
-        <label for="fecha" class="form-label">Filtrar por fecha:</label>
-        <input type="month" id="fecha" name="fecha" class="form-control" value="{{ fecha_filtro }}">
-    </div>
 
-    <!--Tabla de gastos-->
-    {% if movimientos %}
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Fecha</th>
-                    <th>Descripción</th>
-                    <th>Categoría</th>
-                    <th>Monto</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for mov in movimientos %}
-                <tr>
-                    <td>{{ mov.fecha }}</td>
-                    <td>{{ mov.descripcion }}</td>
-                    <td>{{ mov.categoria }}</td>
-                    <td>${{ mov.monto }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% endif %}
-
-    <button class="btn btn-secondary mb-3" onclick="history.back()">← Volver</button>
 
 </main>
 
