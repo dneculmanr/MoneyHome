@@ -1,6 +1,8 @@
 document.addEventListener("DOMContentLoaded", function () {
 
-    // ===== MENÚ HAMBURGUESA =====
+    // =========================
+    // MENÚ HAMBURGUESA
+    // =========================
     const toggleBtn = document.querySelector(".menu-toggle");
     const navMenu = document.querySelector(".nav-menu");
 
@@ -10,7 +12,53 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // ===== MODAL EDITAR CATEGORIA =====
+    // =========================
+    // VALIDACIÓN FORM (SUBMIT)
+    // =========================
+    const forms = document.querySelectorAll("form");
+
+    forms.forEach(form => {
+        form.addEventListener("submit", function (e) {
+            let valid = true;
+            const inputs = form.querySelectorAll("input, select");
+
+            inputs.forEach(input => {
+                if (input.hasAttribute("required") && !input.value.trim()) {
+                    valid = false;
+                    input.classList.add("is-invalid");
+                } else {
+                    input.classList.remove("is-invalid");
+                }
+            });
+
+            if (!valid) {
+                e.preventDefault();
+
+                alert("Completa todos los campos obligatorios");
+            }
+        });
+    });
+
+    // =========================
+    // VALIDACIÓN EN TIEMPO REAL
+    // =========================
+    const inputsRealtime = document.querySelectorAll("input[required], select[required]");
+
+    inputsRealtime.forEach(input => {
+        input.addEventListener("input", () => {
+            if (!input.value.trim()) {
+                input.classList.add("is-invalid");
+                input.classList.remove("is-valid");
+            } else {
+                input.classList.remove("is-invalid");
+                input.classList.add("is-valid");
+            }
+        });
+    });
+
+    // =========================
+    // MODAL EDITAR CATEGORIA
+    // =========================
     const modalEditarCategoria = document.getElementById("modalEditarCategoria");
     const formEditarCategoria = document.getElementById("formEditarCategoria");
     const btnEliminarCategoria = document.getElementById("btnEliminarCategoria");
@@ -26,7 +74,6 @@ document.addEventListener("DOMContentLoaded", function () {
             const nombre = btn.getAttribute("data-nombre");
 
             document.getElementById("edit_categoria_nombre").value = nombre;
-
             formEditarCategoria.action = "/categorias/editar/" + categoriaId;
         });
     }
@@ -41,86 +88,72 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    // =========================
+    // TRANSFERENCIA (SAFE)
+    // =========================
+    function limpiarNumero(valor) {
+        return valor.replace(/[\.,]/g, '');
+    }
 
+    const bancoOrigen = document.getElementById('banco_origen');
+    const bancoDestino = document.getElementById('banco_destino');
+    const montoInput = document.getElementById('monto_origen_transferencia');
 
+    function actualizarNuevoSaldoOrigen() {
+        const saldoEl = document.getElementById('saldo_disponible');
+        const nuevoEl = document.getElementById('nuevo_saldo');
 
-// =====banco
-function actualizarNuevoSaldo() {
-    var saldo = parseFloat(document.getElementById('saldo_disponible').value) || 0;
-    var monto = parseFloat(document.getElementById('monto_origen_transferencia').value) || 0;
-    document.getElementById('nuevo_saldo').value = saldo + monto;
-}
+        if (!saldoEl || !nuevoEl || !montoInput) return;
 
-// Cuando cambia el banco, actualiza el saldo y el nuevo saldo
-document.getElementById('banco_origen').addEventListener('change', function() {
-    var saldo = this.options[this.selectedIndex].getAttribute('data-saldo') || 0;
-    // hace que el saldo se muestre con formato de miles
-    document.getElementById('saldo_disponible').value = Number(saldo).toLocaleString('es-CL', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-});
-    actualizarNuevoSaldo();
-});
+        const saldo = parseFloat(limpiarNumero(saldoEl.value || "0")) || 0;
+        const monto = parseFloat(limpiarNumero(montoInput.value || "0")) || 0;
 
-// Cuando cambia el monto, actualiza el nuevo saldo
-document.getElementById('monto_origen_transferencia').addEventListener('input', actualizarNuevoSaldo);
+        nuevoEl.value = saldo - monto;
+    }
 
+    function actualizarNuevoSaldoDestino() {
+        const saldoEl = document.getElementById('saldo_disponible_destino');
+        const nuevoEl = document.getElementById('nuevo_saldo_destino');
 
-//================================
-//         TRANSFERENCIA
-//================================
+        if (!saldoEl || !nuevoEl || !montoInput) return;
 
-// ===== Función para limpiar separadores de miles =====
-function limpiarNumero(valor) {
-    return valor.replace(/[\.,]/g, '');
-}
+        const saldo = parseFloat(limpiarNumero(saldoEl.value || "0")) || 0;
+        const monto = parseFloat(limpiarNumero(montoInput.value || "0")) || 0;
 
-// ===== ORIGEN =====
-function actualizarNuevoSaldoOrigen() {
-    const saldoStr = document.getElementById('saldo_disponible').value || "0";
-    const montoStr = document.getElementById('monto_origen_transferencia').value || "0";
+        nuevoEl.value = saldo + monto;
+    }
 
-    const saldo = parseFloat(limpiarNumero(saldoStr)) || 0;
-    const monto = parseFloat(limpiarNumero(montoStr)) || 0;
+    if (bancoOrigen) {
+        bancoOrigen.addEventListener('change', function () {
+            const saldo = this.options[this.selectedIndex].getAttribute('data-saldo') || 0;
 
-    // En origen se RESTA el monto
-    document.getElementById('nuevo_saldo').value = saldo - monto;
-}
+            const saldoEl = document.getElementById('saldo_disponible');
+            if (saldoEl) {
+                saldoEl.value = Number(saldo).toLocaleString('es-CL');
+            }
 
-document.getElementById('banco_origen').addEventListener('change', function() {
-    const saldo = this.options[this.selectedIndex].getAttribute('data-saldo') || "0";
-    //hace que el saldo se muestre con formato de miles
-    document.getElementById('saldo_disponible').value = Number(saldo).toLocaleString('es-CL', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-});
-    actualizarNuevoSaldoOrigen();
-});
+            actualizarNuevoSaldoOrigen();
+        });
+    }
 
-document.getElementById('monto_origen_transferencia').addEventListener('input', actualizarNuevoSaldoOrigen);
+    if (bancoDestino) {
+        bancoDestino.addEventListener('change', function () {
+            const saldo = this.options[this.selectedIndex].getAttribute('data-saldo') || 0;
 
+            const saldoEl = document.getElementById('saldo_disponible_destino');
+            if (saldoEl) {
+                saldoEl.value = Number(saldo).toLocaleString('es-CL');
+            }
 
-// ===== DESTINO =====
-function actualizarNuevoSaldoDestino() {
-    const saldoStr = document.getElementById('saldo_disponible_destino').value || "0";
-    const montoStr = document.getElementById('monto_origen_transferencia').value || "0"; // mismo monto de transferencia
+            actualizarNuevoSaldoDestino();
+        });
+    }
 
-    const saldo = parseFloat(limpiarNumero(saldoStr)) || 0;
-    const monto = parseFloat(limpiarNumero(montoStr)) || 0;
-
-    // En destino se SUMA el monto
-    document.getElementById('nuevo_saldo_destino').value = saldo + monto;
-}
-
-document.getElementById('banco_destino').addEventListener('change', function() {
-    const saldo = this.options[this.selectedIndex].getAttribute('data-saldo') || "0";
-    document.getElementById('saldo_disponible_destino').value = Number(saldo).toLocaleString('es-CL', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    });
-    actualizarNuevoSaldoDestino();
-});
-
-document.getElementById('monto_origen_transferencia').addEventListener('input', actualizarNuevoSaldoDestino);
+    if (montoInput) {
+        montoInput.addEventListener('input', () => {
+            actualizarNuevoSaldoOrigen();
+            actualizarNuevoSaldoDestino();
+        });
+    }
 
 });
