@@ -52,6 +52,22 @@ def login():
 
     return render_template('login.html')
 
+#RECUPERAR CLAVE
+
+@app.route('/recuperar', methods=['GET', 'POST'])
+def recuperar():
+    if request.method == 'POST':
+        email = request.form['email']
+
+        # 👉 por ahora solo simulamos (luego hacemos backend real)
+        flash('Si el correo existe, se enviaron instrucciones.', 'success')
+
+        return redirect('/login')
+
+    return render_template('recuperar.html')
+
+
+
 # =========================
 # REGISTER
 # =========================
