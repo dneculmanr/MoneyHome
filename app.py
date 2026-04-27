@@ -460,17 +460,27 @@ def pago_movimiento(id):
             flash("No puedes pagar más que el monto del gasto", "danger")
             return redirect(f'/mov/pago/{id}')
 
+
         # Registrar el pago en historial_pagos
         cursor.execute("""
             INSERT INTO historial_pagos (id_movimiento, fecha_pago, monto_pago, usuario)
             VALUES (%s, NOW(), %s, %s)
         """, (id, monto_pagado, session['user_id']))
+
+        # Descontar el saldo del banco seleccionado
+        cursor.execute("""
+            UPDATE banco SET monto = monto - %s WHERE id = %s AND user_id = %s
+        """, (monto_pagado, banco_id, session['user_id']))
+
         conn.commit()
+
 
         # Consultar saldo pendiente actualizado
         cursor.execute("SELECT saldo_pendiente FROM movimientos WHERE id=%s AND user_id=%s", (id, session['user_id']))
         row = cursor.fetchone()
         if row and row['saldo_pendiente'] <= 0:
+            # Eliminar primero los pagos relacionados para evitar error de integridad
+            cursor.execute("DELETE FROM historial_pagos WHERE id_movimiento=%s", (id,))
             cursor.execute("DELETE FROM movimientos WHERE id=%s AND user_id=%s", (id, session['user_id']))
             conn.commit()
             flash("Pago realizado y gasto eliminado correctamente", "success")

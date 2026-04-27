@@ -172,5 +172,27 @@ document.addEventListener("DOMContentLoaded", function () {
             updateSaldo();
     });
 
+    document.getElementById('gastoSelect').addEventListener('change', function() {
+        var id = this.value;
+        if (id) {
+            window.location.href = '/mov/pago/' + id;
+        }
+    }); 
+
+    // Script para actualizar el saldo del banco al cambiar el selector
+    document.addEventListener('DOMContentLoaded', function() {
+        var bancoSelect = document.getElementById('banco1');
+        var saldoInput = document.getElementById('saldoBanco');
+            if (bancoSelect && saldoInput) {
+                function updateSaldo() {
+                    var selected = bancoSelect.options[bancoSelect.selectedIndex];
+                    var saldo = selected.getAttribute('data-saldo');
+                        saldoInput.value = saldo !== null ? saldo : '';
+                        }
+                bancoSelect.addEventListener('change', updateSaldo);
+    // Inicializar al cargar
+    updateSaldo();
+    }
+    });
 
 });

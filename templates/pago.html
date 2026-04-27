@@ -28,15 +28,6 @@
         </select>
     </div>
 
-    <script>
-    document.getElementById('gastoSelect').addEventListener('change', function() {
-        var id = this.value;
-        if (id) {
-            window.location.href = '/mov/pago/' + id;
-        }
-    });
-    </script>
-
 
     <!--Lista desplegable que contiene el detalle del gasto seleccionado-->
     <ul class="list-group">
@@ -89,9 +80,9 @@
         <form class="border p-3 bg-light" method="POST" action="/mov/pago/{{ movimiento.id if movimiento else '' }}">
             <div class="mb-2">
                 <label for="banco1" class="form-label">Banco</label>
-                <select id="banco1" name="banco_id" class="form-select" {% if not movimiento %}disabled{% endif %}>
+                <select id="banco1" name="banco_id" class="form-select">
                     {% for banco in bancos %}
-                        <option value="{{ banco.id }}" data-saldo="{{ banco.saldo_real }}" {% if movimiento and banco.id == movimiento.banco_id %}selected{% endif %}>{{ banco.nombre_banco }}</option>
+                        <option value="{{ banco.id }}" data-saldo="{{ banco.saldo_real if banco.saldo_real is defined else banco.monto }}">{{ banco.nombre }}</option>
                     {% endfor %}
                 </select>
             </div>
