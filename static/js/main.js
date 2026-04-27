@@ -156,4 +156,21 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    // =========================
+    // PAGO
+    // =========================
+
+    // Actualizar saldo mostrado al cambiar banco
+    document.addEventListener('DOMContentLoaded', function() {
+        var bancoSelect = document.getElementById('banco1');
+        var saldoBanco = document.getElementById('saldoBanco');
+        function updateSaldo() {
+            var selected = bancoSelect.options[bancoSelect.selectedIndex];
+            saldoBanco.value = selected ? selected.getAttribute('data-saldo') : '';
+            }
+            bancoSelect.addEventListener('change', updateSaldo);
+            updateSaldo();
+    });
+
+
 });

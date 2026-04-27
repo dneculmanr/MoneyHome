@@ -17,8 +17,100 @@
 
 <main class="flex-grow-1 container mt-4">
 
-    <p class="h4 mb-4">En proceso de creación</p>
+    <!--Selector de gastos, al seleccionar uno se muestra su detalle-->
+    <div class="mb-4">
+        <label for="gastoSelect">Selecciona un gasto:</label>
+        <select id="gastoSelect" class="form-select">
+            <option value="">-- Selecciona --</option>
+            {% for gasto in gastos %}
+                <option value="{{ gasto.id }}" {% if gasto.id == movimiento.id %}selected{% endif %}>{{ gasto.descripcion }} - {{ gasto.monto }}</option>
+            {% endfor %}
+        </select>
+    </div>
 
+    <script>
+    document.getElementById('gastoSelect').addEventListener('change', function() {
+        var id = this.value;
+        if (id) {
+            window.location.href = '/mov/pago/' + id;
+        }
+    });
+    </script>
+
+
+    <!--Lista desplegable que contiene el detalle del gasto seleccionado-->
+    <ul class="list-group">
+    <!-- Item de gasto -->
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        <!--Label del gasto seleccionado-->
+        <span>Gasto seleccionado</span>
+        <button class="btn btn-info" data-bs-toggle="collapse" data-bs-target="#detalle1">
+        Detalle de gasto
+        </button>
+    </li>
+
+  <!-- Formulario desplegable asociado -->
+    <div class="collapse mt-2" id="detalle1">
+        <form class="border p-3 bg-light">
+        <div class="mb-2">
+            <label for="nombre1" class="form-label">Nombre</label>
+            <input type="text" id="nombre1" class="form-control" value="{{ movimiento.descripcion if movimiento else '' }}" readonly>
+        </div>
+        <div class="mb-2">
+            <label for="monto1" class="form-label">Monto</label>
+            <input type="text" id="monto1" class="form-control" value="{{ movimiento.monto if movimiento else '' }}" readonly>
+        </div>
+        <div class="mb-2">
+            <label for="fecha1" class="form-label">Fecha</label>
+            <input type="date" id="fecha1" class="form-control" value="{{ movimiento.fecha if movimiento else '' }}" readonly>
+        </div>
+        <div class="mb-2">
+            <label for="categoria1" class="form-label">Categoría</label>
+            <input type="text" id="categoria1" class="form-control" value="{{ movimiento.categoria if movimiento else '' }}" readonly>
+        </div>
+        </form>
+    </div>
+    </ul>
+
+
+    <!--Lista desplegable que contiene formulario con el banco-->
+    <ul class="list-group">
+    <!-- Item de gasto -->
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        <!--Label del gasto seleccionado-->
+        <span>Banco</span>
+        <button class="btn btn-info" data-bs-toggle="collapse" data-bs-target="#detalle1">
+        Detalle de gasto
+        </button>
+    </li>
+
+  <!-- Formulario desplegable asociado -->
+    <div class="collapse mt-2" id="detalle1">
+        <form class="border p-3 bg-light" method="POST" action="/mov/pago/{{ movimiento.id if movimiento else '' }}">
+            <div class="mb-2">
+                <label for="banco1" class="form-label">Banco</label>
+                <select id="banco1" name="banco_id" class="form-select" {% if not movimiento %}disabled{% endif %}>
+                    {% for banco in bancos %}
+                        <option value="{{ banco.id }}" data-saldo="{{ banco.saldo_real }}" {% if movimiento and banco.id == movimiento.banco_id %}selected{% endif %}>{{ banco.nombre_banco }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Saldo actual</label>
+                <input type="text" class="form-control" id="saldoBanco" value="{{ saldo_banco if saldo_banco is not none else '' }}" readonly>
+            </div>
+            <script>
+
+            </script>
+            <!-- Monto del gasto -->
+            <div class="mb-2">
+                <label for="monto1" class="form-label">Monto</label>
+                <input type="text" id="monto1" name="monto" class="form-control" value="{{ movimiento.monto if movimiento else '' }}" placeholder="Monto del gasto" autocomplete="off" {% if not movimiento %}disabled{% endif %}>
+            </div>
+            <button type="submit" class="btn btn-success" {% if not movimiento %}disabled{% endif %}>Pagar</button>
+        </form>
+    </div>
+    </ul>
 
 
 </main>

@@ -111,7 +111,6 @@ ADD CONSTRAINT fk_familia
 FOREIGN KEY (familia_id) REFERENCES familia(id);
 
 
------------NUEVO---------------------
 
 
 CREATE TABLE tipo_cuenta ( 
@@ -139,6 +138,34 @@ CREATE TABLE banco (
 ALTER TABLE movimientos
 ADD COLUMN banco_id INT NOT NULL,
 ADD CONSTRAINT fk_mov_banco FOREIGN KEY (banco_id) REFERENCES banco(id);
+
+----------------Nuevo-----------------------
+CREATE TABLE historial_pagos (
+    id_pago INT AUTO_INCREMENT PRIMARY KEY,
+    id_movimiento INT NOT NULL,
+    fecha_pago DATE NOT NULL,
+    monto_pago DECIMAL(12,2) NOT NULL,
+    usuario VARCHAR(100),
+    FOREIGN KEY (id_movimiento) REFERENCES movimientos(id)
+    );
+
+ALTER TABLE movimientos
+ADD COLUMN monto_pagado DECIMAL(12,2) DEFAULT 0;
+
+ALTER TABLE movimientos
+ADD COLUMN saldo_pendiente DECIMAL(12,2) GENERATED ALWAYS AS (monto - monto_pagado) STORED;
+
+DELIMITER $$
+CREATE TRIGGER actualizar_monto_pagado
+AFTER INSERT ON historial_pagos
+FOR EACH ROW
+BEGIN
+    UPDATE movimientos
+    SET monto_pagado = monto_pagado + NEW.monto_pago
+    WHERE id = NEW.id_movimiento;
+END$$
+DELIMITER ;
+
 ```
 
 ---

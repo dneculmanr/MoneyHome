@@ -354,10 +354,40 @@ def eliminar_movimiento():
 # =========================
 #           PAGO
 # =========================
-# Endpoint para redireccionar a la página de pago de un movimiento específico.
-@app.route('/mov/pago/<int:id>', methods=['GET'])
 
-# Endpoint para mostrar la página de pago de un movimiento específico.
+# Endpoint para mostrar la página de pago general (sin id)
+@app.route('/mov/pago')
+def pago():
+    if 'user_id' not in session:
+        return redirect('/login')
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Traer bancos del usuario
+    cursor.execute("SELECT * FROM banco WHERE user_id=%s", (session['user_id'],))
+    bancos = cursor.fetchall()
+
+    # Traer todos los gastos del usuario (tipo_id=2)
+    cursor.execute("""
+        SELECT 
+            m.id, 
+            m.descripcion, 
+            m.monto,
+            m.monto_pagado,
+            m.saldo_pendiente,
+            c.nombre AS categoria
+        FROM movimientos m
+        LEFT JOIN categorias c ON m.categoria_id = c.id
+        WHERE m.user_id = %s AND m.tipo_id = 2
+        ORDER BY m.fecha DESC, m.id DESC
+    """, (session['user_id'],))
+    gastos = cursor.fetchall()
+
+    return render_template('pago.html', bancos=bancos, gastos=gastos, movimiento=None, saldo_banco=None)
+
+
+# Endpoint para redireccionar a la página de pago de un movimiento específico
+@app.route('/mov/pago/<int:id>', methods=['GET', 'POST'])
 def pago_movimiento(id):
     if 'user_id' not in session:
         return redirect('/login')
@@ -365,54 +395,101 @@ def pago_movimiento(id):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # Validar que el movimiento a pagar pertenece al usuario logueado y es un gasto.
-    cursor.execute("SELECT * FROM movimientos WHERE id=%s AND user_id=%s AND tipo_id=2",(id,session['user_id']))
+    # Traer bancos con saldo real
+    cursor.execute("""
+        SELECT b.id, b.nombre_banco AS nombre, b.monto,
+               COALESCE(
+                   b.monto + SUM(
+                       CASE
+                           WHEN m.tipo_id = 1 THEN m.monto
+                           WHEN m.tipo_id = 2 THEN -m.monto
+                           ELSE 0
+                       END
+                   ),
+                   b.monto
+               ) AS saldo_real
+        FROM banco b
+        LEFT JOIN movimientos m ON m.banco_id = b.id
+        WHERE b.user_id = %s
+        GROUP BY b.id, b.nombre_banco, b.monto
+        ORDER BY b.id DESC
+    """, (session['user_id'],))
+    bancos = cursor.fetchall()
+
+    # Obtener el movimiento
+    cursor.execute("""
+        SELECT m.*, c.nombre AS categoria
+        FROM movimientos m
+        LEFT JOIN categorias c ON m.categoria_id = c.id
+        WHERE m.id=%s AND m.user_id=%s AND m.tipo_id=2
+    """, (id, session['user_id']))
     movimiento = cursor.fetchone()
-
-    #Validar que el monto a pagar no supera el saldo disponible del banco ni el monto del movimiento.
-    if movimiento:
-        cursor.execute("""
-            SELECT COALESCE(
-                b.monto + SUM(
-                    CASE
-                        WHEN m.tipo_id = 1 THEN m.monto
-                        WHEN m.tipo_id = 2 THEN -m.monto
-                        ELSE 0
-                    END
-                ),
-                b.monto
-            ) AS saldo_actual
-            FROM banco b
-            LEFT JOIN movimientos m ON m.banco_id = b.id
-            WHERE b.id = %s AND b.user_id = %s
-            GROUP BY b.id, b.monto
-        """, (movimiento['banco_id'], session['user_id']))
-        row = cursor.fetchone()
-        saldo_disponible = row['saldo_actual'] if row else 0
-
-        if movimiento['monto'] > saldo_disponible:
-            flash("El monto a pagar no puede ser mayor al saldo disponible del banco.", "danger")
-            return redirect('/mov')
-    
-    #Eliminar el movimiento después de la confirmación de pago.
-    if request.method == 'POST':
-        cursor.execute("DELETE FROM movimientos WHERE id=%s AND user_id=%s",(id,session['user_id']))
-        conn.commit()
-        flash("Movimiento pagado y eliminado correctamente", "success")
-        return redirect('/mov')
-    
-    # Eliminar el pago y recuperar el movimiento original para mostrar en la página de pago.
-    if request.method == 'POST':
-        cursor.execute("DELETE FROM movimientos WHERE id=%s AND user_id=%s",(id,session['user_id']))
-        conn.commit()
-        flash("Movimiento pagado y eliminado correctamente", "success")
-        return redirect('/mov')
-    
     if not movimiento:
-        flash("Movimiento no encontrado", "danger")
+        flash("Movimiento no encontrado o no es un gasto", "danger")
         return redirect('/mov')
 
-    return render_template('pago.html', movimiento=movimiento)
+    # Selección de banco
+    banco_id = None
+    if request.method == 'POST':
+        banco_id = request.form.get('banco_id')
+    elif bancos:
+        banco_id = movimiento['banco_id'] if movimiento and movimiento['banco_id'] else bancos[0]['id']
+
+    saldo_banco = None
+    if banco_id:
+        banco_match = next((b for b in bancos if str(b['id']) == str(banco_id)), None)
+        saldo_banco = banco_match['saldo_real'] if banco_match else None
+
+    if request.method == 'POST':
+        try:
+            monto_pagado = float(request.form.get('monto', '0').replace(',', '.'))
+        except Exception:
+            monto_pagado = 0
+
+        # Validaciones
+        if not banco_match:
+            flash("Banco no encontrado", "danger")
+            return redirect(f'/mov/pago/{id}')
+        if banco_match['saldo_real'] < monto_pagado:
+            flash("Saldo insuficiente en el banco seleccionado", "danger")
+            return redirect(f'/mov/pago/{id}')
+        if monto_pagado <= 0:
+            flash("El monto a pagar debe ser mayor a 0", "danger")
+            return redirect(f'/mov/pago/{id}')
+        if monto_pagado > movimiento['monto']:
+            flash("No puedes pagar más que el monto del gasto", "danger")
+            return redirect(f'/mov/pago/{id}')
+
+        # Registrar el pago en historial_pagos
+        cursor.execute("""
+            INSERT INTO historial_pagos (id_movimiento, fecha_pago, monto_pago, usuario)
+            VALUES (%s, NOW(), %s, %s)
+        """, (id, monto_pagado, session['user_id']))
+        conn.commit()
+
+        # Consultar saldo pendiente actualizado
+        cursor.execute("SELECT saldo_pendiente FROM movimientos WHERE id=%s AND user_id=%s", (id, session['user_id']))
+        row = cursor.fetchone()
+        if row and row['saldo_pendiente'] <= 0:
+            cursor.execute("DELETE FROM movimientos WHERE id=%s AND user_id=%s", (id, session['user_id']))
+            conn.commit()
+            flash("Pago realizado y gasto eliminado correctamente", "success")
+        else:
+            flash("Pago parcial registrado correctamente", "success")
+
+        return redirect('/mov')
+
+    # Traer todos los gastos del usuario para el selector
+    cursor.execute("""
+        SELECT m.id, m.descripcion, m.monto, m.monto_pagado, m.saldo_pendiente
+        FROM movimientos m
+        WHERE m.user_id = %s AND m.tipo_id = 2
+        ORDER BY m.fecha DESC, m.id DESC
+    """, (session['user_id'],))
+    gastos = cursor.fetchall()
+
+    return render_template('pago.html', movimiento=movimiento, bancos=bancos, gastos=gastos, saldo_banco=saldo_banco)
+
 
 # =========================
 # MOVIMIENTOS DE TRANSFERENCIA
