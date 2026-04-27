@@ -166,6 +166,26 @@ BEGIN
 END$$
 DELIMITER ;
 
+-- Agregar columna de saldo_actual en banco
+ALTER TABLE banco
+ADD COLUMN saldo_actual DECIMAL(12,2) NOT NULL DEFAULT 0;
+
+
+-- Trigger para actualizar saldo del banco cuando se registra un pago
+DELIMITER $$
+
+CREATE TRIGGER actualizar_saldo_banco
+AFTER INSERT ON historial_pagos
+FOR EACH ROW
+BEGIN
+    UPDATE banco
+    SET saldo_actual = saldo_actual - NEW.monto_pago
+    WHERE id = NEW.id_banco;
+END$$
+
+DELIMITER ;
+
+
 ```
 
 ---
