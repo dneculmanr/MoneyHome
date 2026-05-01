@@ -13,12 +13,27 @@
 
 <div class="login-container">
 
-    <div class="card shadow p-4 login-card">
+<div class="card shadow p-4 login-card">
 
-        <div class="text-center mb-3">
-            <img src="/static/Imagenes/logo.png" style="width:70px;">
-            <h3 class="mt-2">Registro</h3>
-        </div>
+    <div class="text-center mb-3">
+        <img src="/static/Imagenes/logo.png" style="width:70px;">
+        <h3 class="mt-2">Registro</h3>
+    </div>
+
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+
 
         <form method="POST">
 

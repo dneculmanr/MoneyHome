@@ -46,7 +46,7 @@ min-vh-100: establece la altura mínima al 100% de la ventana gráfica -->
             <div class="card bg-success text-white shadow">
                 <div class="card-body">
                     <h5>Ingresos</h5>
-                    <h3>${{ ingresos }}</h3>
+                <h3>${{ "{:,.0f}".format(ingresos).replace(",", ".") }}</h3>
                 </div>
             </div>
         </div>
@@ -55,7 +55,7 @@ min-vh-100: establece la altura mínima al 100% de la ventana gráfica -->
             <div class="card bg-danger text-white shadow">
                 <div class="card-body">
                     <h5>Gastos</h5>
-                    <h3>${{ gastos }}</h3>
+                <h3>${{ "{:,.0f}".format(gastos).replace(",", ".") }}</h3>
                 </div>
             </div>
         </div>
@@ -65,7 +65,7 @@ min-vh-100: establece la altura mínima al 100% de la ventana gráfica -->
             <div class="card bg-primary text-white shadow">
                 <div class="card-body">
                     <h5>Saldo</h5>
-                    <h3>${{ saldo }}</h3>
+                    <h3>${{ "{:,.0f}".format(saldo).replace(",", ".") }}</h3>
                 </div>
             </div>
         </div>
@@ -102,7 +102,7 @@ min-vh-100: establece la altura mínima al 100% de la ventana gráfica -->
                                     <span class="badge bg-secondary">transferencia</span>
                                 {% endif %}
                             </td>
-                            <td>${{ m.monto }}</td>
+                            <td>${{ "{:,.0f}".format(m.monto).replace(",", ".") }}</td>
                             <td>{{ m.fecha }}</td>
                         </tr>
                         {% endfor %}

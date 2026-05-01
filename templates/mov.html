@@ -178,7 +178,7 @@
                     <tr>
                         <td>{{ b.nombre }}</td>
                         <td>{{ b.fecha }}</td>
-                        <td>${{ "%.2f"|format(b.monto) }}</td>
+                        <td>${{ "{:,.0f}".format(b.monto).replace(",", ".") }}</td>
 
                         <t>
                             {% if m.tipo == 'ingreso' %}
