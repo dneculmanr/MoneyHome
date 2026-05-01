@@ -1,3 +1,5 @@
+import smtplib
+from email.mime.text import MIMEText
 from flask import Flask, render_template, request, redirect, session, send_file, flash
 from openpyxl import Workbook
 from openpyxl.worksheet.table import Table, TableStyleInfo
@@ -33,40 +35,103 @@ def formatear_miles(valor):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
 
-        cursor.execute(
-            "SELECT * FROM usuarios WHERE email=%s AND password=%s",
-            (request.form['email'], request.form['password'])
-        )
-
+        cursor.execute("SELECT * FROM usuarios WHERE email=%s AND password=%s", (email, password))
         user = cursor.fetchone()
 
         if user:
             session['user_id'] = user['id']
-            session['usuario_nombre'] = user['nombre']
-            return redirect('/')
+            session['nombre'] = user['nombre']
+
+            # 🔥 LÓGICA DE FLUJO
+            cursor.execute("SELECT COUNT(*) AS total FROM banco WHERE user_id=%s", (user['id'],))
+            resultado = cursor.fetchone()
+
+            cursor.close()
+            conn.close()
+
+            if resultado['total'] == 0:
+                # Usuario nuevo → no tiene banco
+                return redirect('/banco')
+            else:
+                # Usuario ya configurado
+                return redirect('/')
+
         else:
-            return "Credenciales incorrectas"
+            flash("Credenciales incorrectas", "danger")
 
     return render_template('login.html')
 
 #RECUPERAR CLAVE
+
+import uuid
 
 @app.route('/recuperar', methods=['GET', 'POST'])
 def recuperar():
     if request.method == 'POST':
         email = request.form['email']
 
-        # 👉 por ahora solo simulamos (luego hacemos backend real)
-        flash('Si el correo existe, se enviaron instrucciones.', 'success')
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
 
+        cursor.execute("SELECT * FROM usuarios WHERE email=%s", (email,))
+        user = cursor.fetchone()
+
+        if user:
+            token = str(uuid.uuid4())
+
+            cursor.execute("""
+            UPDATE usuarios
+            SET reset_token=%s,
+            reset_expira = DATE_ADD(NOW(), INTERVAL 1 HOUR)
+            WHERE email=%s
+        """, (token, email))
+            conn.commit()
+
+            link = f"http://127.0.0.1:5000/reset/{token}"
+
+            # 🔥 ENVÍO REAL
+            enviar_email(
+                email,
+                "Recuperación de contraseña - MoneyHome",
+                f"Hola!\n\nHaz click aquí para recuperar tu contraseña:\n{link}"
+            )
+
+        cursor.close()
+        conn.close()
+
+        flash("Si el correo existe, se enviaron instrucciones.", "success")
         return redirect('/login')
 
     return render_template('recuperar.html')
 
+# FUNCION PARA ENVIAR MAIL
 
+def enviar_email(destinatario, asunto, cuerpo):
+    remitente = "moneyhomemain@gmail.com"
+    password = "xeef zefz tdjc fplj "
+
+    mensaje = MIMEText(cuerpo)
+    mensaje["Subject"] = asunto
+    mensaje["From"] = remitente
+    mensaje["To"] = destinatario
+
+    try:
+        servidor = smtplib.SMTP("smtp.gmail.com", 587)
+        servidor.starttls()
+        servidor.login(remitente, password)
+        servidor.send_message(mensaje)
+        servidor.quit()
+    except Exception as e:
+        print("❌ ERROR SMTP:")
+        print(e)
+        raise e
+        
 
 # =========================
 # REGISTER
@@ -75,14 +140,35 @@ def recuperar():
 def register():
     if request.method == 'POST':
         conn = get_db_connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
 
+        email = request.form['email']
+
+        # 🔍 VALIDAR SI YA EXISTE
+        cursor.execute("SELECT id FROM usuarios WHERE email=%s", (email,))
+        existente = cursor.fetchone()
+
+        if existente:
+            flash("Este correo ya está registrado", "danger")
+            cursor.close()
+            conn.close()
+            return redirect('/register')
+
+        # ✅ INSERTAR SI NO EXISTE
         cursor.execute("""
             INSERT INTO usuarios (nombre, email, password)
             VALUES (%s, %s, %s)
-        """, (request.form['nombre'], request.form['email'], request.form['password']))
+        """, (
+            request.form['nombre'],
+            email,
+            request.form['password']
+        ))
 
         conn.commit()
+        cursor.close()
+        conn.close()
+
+        flash("Cuenta creada correctamente", "success")
         return redirect('/login')
 
     return render_template('register.html')
@@ -96,7 +182,7 @@ def logout():
     return redirect('/login')
 
 # =========================
-# DASHBOARD (CON FAMILIA)
+# DASHBOARD (CON FAMILIA + FLUJO PRO)
 # =========================
 @app.route('/')
 def index():
@@ -106,21 +192,53 @@ def index():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # Totales (solo del usuario por ahora)
+    # 🔥 VALIDAR SI TIENE BANCO
+    cursor.execute(
+        "SELECT id FROM banco WHERE user_id=%s LIMIT 1",
+        (session['user_id'],)
+    )
+    banco = cursor.fetchone()
+
+    # 👉 SI NO TIENE BANCO → FORZAR FLUJO
+    if not banco:
+        cursor.close()
+        conn.close()
+        return redirect('/banco')
+
+    # =========================
+    # INGRESOS Y GASTOS
+    # =========================
     cursor.execute("""
         SELECT 
-            SUM(CASE WHEN tipo_id = 1 THEN monto ELSE 0 END) AS ingresos,
-            SUM(CASE WHEN tipo_id = 2 THEN monto ELSE 0 END) AS gastos
+            COALESCE(SUM(CASE WHEN tipo_id = 1 THEN monto ELSE 0 END),0) AS ingresos,
+            COALESCE(SUM(CASE WHEN tipo_id = 2 THEN monto ELSE 0 END),0) AS gastos
         FROM movimientos
         WHERE user_id = %s
     """, (session['user_id'],))
 
     data = cursor.fetchone()
-    ingresos = data['ingresos'] or 0
-    gastos = data['gastos'] or 0
-    saldo = ingresos - gastos
+    ingresos = data['ingresos']
+    gastos = data['gastos']
 
-    # Movimientos (usuario + familia)
+    # =========================
+    # 🔥 NUEVO: SALDO BANCOS
+    # =========================
+    cursor.execute("""
+        SELECT COALESCE(SUM(monto),0) AS saldo_bancos
+        FROM banco
+        WHERE user_id = %s
+    """, (session['user_id'],))
+
+    saldo_bancos = cursor.fetchone()['saldo_bancos']
+
+    # =========================
+    # 🔥 SALDO FINAL REAL
+    # =========================
+    saldo = saldo_bancos + ingresos - gastos
+
+    # =========================
+    # MOVIMIENTOS
+    # =========================
     cursor.execute("""
         SELECT m.*, c.nombre AS categoria, t.nombre AS tipo, u.nombre AS usuario
         FROM movimientos m
@@ -131,9 +249,13 @@ def index():
            OR u.familia_id = (
                 SELECT familia_id FROM usuarios WHERE id = %s
            )
+        ORDER BY m.fecha DESC
     """, (session['user_id'], session['user_id']))
 
     movimientos = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
 
     return render_template('index.html',
         ingresos=ingresos,
@@ -690,43 +812,10 @@ def familia():
 # BANCOS
 # =========================
 
-# Endpoint para mostrar la pagina bancos.
-@app.route('/banco', methods=['GET'])
-# Endpoint para mostrar el formulario de edición de un banco específico.
-@app.route('/banco/<int:id>', methods=['GET', 'POST'])
-def banco(id=None):
-    if 'user_id' not in session:
-        return redirect('/login')
-
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    if id and request.method == 'POST':
-        nombre_banco = request.form.get('nombre_banco', '').strip()
-        saldo_inicial = request.form.get('monto') or 0
-
-        cursor.execute(
-            """
-            UPDATE banco
-            SET nombre_banco = %s, monto = %s
-            WHERE id = %s AND user_id = %s
-            """,
-            (nombre_banco, saldo_inicial, id, session['user_id'])
-        )
-        conn.commit()
-        flash("Banco actualizado correctamente", "success")
-        return redirect('/banco')
-
-    if id:
-        cursor.execute("SELECT * FROM banco WHERE id=%s AND user_id=%s",(id,session['user_id']))
-        banco = cursor.fetchone()
-        if not banco:
-            flash("Banco no encontrado", "danger")
-            return redirect('/banco')
-        return render_template('editar_banco.html', banco=banco)
-
+@app.route('/banco')
+def banco():
     return bancos()
-    
+
 # Endpoint para mostrar los bancos del usuario.
 @app.route('/bancos', methods=['GET'])
 def bancos():
@@ -735,11 +824,9 @@ def bancos():
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    tipos_banco = []
 
     try:
-        cursor.execute(
-            """
+        cursor.execute("""
             SELECT
                 b.id,
                 b.nombre_banco AS nombre,
@@ -759,22 +846,34 @@ def bancos():
             WHERE b.user_id = %s
             GROUP BY b.id, b.nombre_banco, b.monto
             ORDER BY b.id DESC
-            """,
-            (session['user_id'],)
-        )
-        bancos = cursor.fetchall()
-    except mysql.connector.Error:
-        cursor.execute("SELECT id, nombre AS nombre, saldo AS saldo_actual FROM bancos ORDER BY id DESC")
+        """, (session['user_id'],))
+
         bancos = cursor.fetchall()
 
-    try:
-        cursor.execute("SELECT id, nombre FROM tipo_banco ORDER BY nombre ASC")
-        tipos_banco = cursor.fetchall()
     except mysql.connector.Error:
-        tipos_banco = []
+        bancos = []
 
-    return render_template('banco.html', bancos=bancos, tipos_banco=tipos_banco)
-# Endpoint para crear un nuevo banco.
+    # 🔥 TRAER TIPOS
+    cursor.execute("SELECT id, nombre FROM tipo_banco ORDER BY nombre ASC")
+    tipos_banco = cursor.fetchall()
+
+    cursor.execute("SELECT id, nombre FROM tipo_cuenta ORDER BY nombre ASC")
+    tipos_cuenta = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return render_template(
+        'banco.html',
+        bancos=bancos,
+        tipos_banco=tipos_banco,
+        tipos_cuenta=tipos_cuenta
+    )
+
+
+# =========================
+# CREAR BANCO
+# =========================
 @app.route('/banco/crear', methods=['POST'])
 def crear_banco():
     if 'user_id' not in session:
@@ -785,52 +884,78 @@ def crear_banco():
 
     tipo_banco_id = request.form.get('tipo_banco_id')
     tipo_cuenta_id = request.form.get('tipo_cuenta_id')
-    nombre_banco = (
-        request.form.get('nombre', '').strip()
-        or request.form.get('comentario', '').strip()
-        or 'Banco Principal'
-    )
-    saldo_inicial = request.form.get('monto') or 0
-    #VALIDACION: si no se envía tipo_banco_id, se asigna el primero disponible en la base de datos.
+
+    # 🔥 CORREGIDO
+    nombre_banco = request.form.get('nombre_banco', '').strip()
+
+    # 🔥 LIMPIAR MONTO (CLP)
+    monto_str = request.form.get('monto', '0')
+    monto_str = monto_str.replace('.', '').replace(',', '')
+    saldo_inicial = float(monto_str) if monto_str else 0
+
+    # fallback si no vienen
     if not tipo_banco_id:
-        cursor.execute("SELECT id FROM tipo_banco ORDER BY id ASC LIMIT 1")
+        cursor.execute("SELECT id FROM tipo_banco LIMIT 1")
         row = cursor.fetchone()
         tipo_banco_id = row[0] if row else None
-    #VALIDACION: si no se envía o tipo_cuenta_id, se asigna el primero disponible en la base de datos.
+
     if not tipo_cuenta_id:
-        cursor.execute("SELECT id FROM tipo_cuenta ORDER BY id ASC LIMIT 1")
+        cursor.execute("SELECT id FROM tipo_cuenta LIMIT 1")
         row = cursor.fetchone()
         tipo_cuenta_id = row[0] if row else None
-    #VALIDACION: mostrar mensaje de error.
+
     if not tipo_banco_id or not tipo_cuenta_id:
-        flash("Debes cargar tipo_banco y tipo_cuenta antes de crear bancos.", "danger")
+        flash("Debes crear tipos de banco y cuenta primero", "danger")
         return redirect('/banco')
 
-    cursor.execute(
-        "INSERT INTO banco (user_id, tipo_banco_id, tipo_cuenta_id, nombre_banco, monto) VALUES (%s, %s, %s, %s, %s)",
-        (session['user_id'], tipo_banco_id, tipo_cuenta_id, nombre_banco, saldo_inicial)
-    )
+    cursor.execute("""
+        INSERT INTO banco (user_id, tipo_banco_id, tipo_cuenta_id, nombre_banco, monto)
+        VALUES (%s, %s, %s, %s, %s)
+    """, (
+        session['user_id'],
+        tipo_banco_id,
+        tipo_cuenta_id,
+        nombre_banco,
+        saldo_inicial
+    ))
+
     conn.commit()
+    cursor.close()
+    conn.close()
 
-    return redirect('/banco')
+    flash("Banco creado correctamente", "success")
+    return redirect('/')
 
+
+# =========================
+# ELIMINAR BANCO
+# =========================
 @app.route('/banco/eliminar', methods=['POST'])
 def eliminar_banco():
     if 'user_id' not in session:
         return redirect('/login')
 
     banco_id = request.form.get('id')
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        cursor.execute("DELETE FROM banco WHERE id=%s AND user_id=%s", (banco_id, session['user_id']))
+        cursor.execute("DELETE FROM banco WHERE id=%s AND user_id=%s",
+                       (banco_id, session['user_id']))
         conn.commit()
         flash("Banco eliminado correctamente", "success")
     except mysql.connector.Error:
-        flash("No se pudo eliminar el banco porque tiene movimientos asociados.", "danger")
+        flash("No se puede eliminar (tiene movimientos)", "danger")
+
+    cursor.close()
+    conn.close()
 
     return redirect('/banco')
+
+
+
+
 # =========================
 # TIPOS DE BANCO
 # =========================
@@ -1481,6 +1606,41 @@ def reporte_ingresos_mensuales_pdf():
         download_name="Ingresos_mensuales.pdf",
         mimetype="application/pdf",
     )
+
+
+@app.route('/reset/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT * FROM usuarios 
+        WHERE reset_token=%s AND reset_expira > NOW()
+    """, (token,))
+    user = cursor.fetchone()
+
+    if not user:
+        flash("Token inválido o expirado", "danger")
+        return redirect('/login')
+
+    if request.method == 'POST':
+        nueva_password = request.form['password']
+
+        cursor.execute("""
+            UPDATE usuarios 
+            SET password=%s, reset_token=NULL, reset_expira=NULL
+            WHERE id=%s
+        """, (nueva_password, user['id']))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        flash("Contraseña actualizada correctamente", "success")
+        return redirect('/login')
+
+    return render_template('reset.html')
+
 
 
 # =========================
