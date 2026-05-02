@@ -812,11 +812,72 @@ def familia():
 # BANCOS
 # =========================
 
-@app.route('/banco')
-def banco():
+# 🔥 AHORA SOPORTA /banco Y /banco/<id>
+@app.route('/banco', methods=['GET'])
+@app.route('/banco/<int:id>', methods=['GET', 'POST'])
+def banco(id=None):
+
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # =========================
+    # EDITAR BANCO (POST)
+    # =========================
+    if id and request.method == 'POST':
+
+        nombre_banco = request.form.get('nombre_banco', '').strip()
+
+        monto_str = request.form.get('saldo_inicial', '0')
+        monto_str = monto_str.replace('.', '').replace(',', '')
+        monto = float(monto_str) if monto_str else 0
+
+        cursor.execute("""
+            UPDATE banco
+            SET nombre_banco = %s, monto = %s
+            WHERE id = %s AND user_id = %s
+        """, (nombre_banco, monto, id, session['user_id']))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        flash("Banco actualizado correctamente", "success")
+        return redirect('/banco')
+
+    # =========================
+    # MOSTRAR EDITAR
+    # =========================
+    if id:
+        cursor.execute("""
+            SELECT * FROM banco
+            WHERE id = %s AND user_id = %s
+        """, (id, session['user_id']))
+
+        banco = cursor.fetchone()
+
+        cursor.close()
+        conn.close()
+
+        if not banco:
+            flash("Banco no encontrado", "danger")
+            return redirect('/banco')
+
+        return render_template('editar_banco.html', banco=banco)
+
+    # =========================
+    # LISTADO (usa tu función actual)
+    # =========================
+    cursor.close()
+    conn.close()
     return bancos()
 
-# Endpoint para mostrar los bancos del usuario.
+
+# =========================
+# LISTADO BANCOS
+# =========================
 @app.route('/bancos', methods=['GET'])
 def bancos():
     if 'user_id' not in session:
@@ -853,7 +914,7 @@ def bancos():
     except mysql.connector.Error:
         bancos = []
 
-    # 🔥 TRAER TIPOS
+    # 🔥 TIPOS
     cursor.execute("SELECT id, nombre FROM tipo_banco ORDER BY nombre ASC")
     tipos_banco = cursor.fetchall()
 
@@ -885,15 +946,12 @@ def crear_banco():
     tipo_banco_id = request.form.get('tipo_banco_id')
     tipo_cuenta_id = request.form.get('tipo_cuenta_id')
 
-    # 🔥 CORREGIDO
     nombre_banco = request.form.get('nombre_banco', '').strip()
 
-    # 🔥 LIMPIAR MONTO (CLP)
     monto_str = request.form.get('monto', '0')
     monto_str = monto_str.replace('.', '').replace(',', '')
     saldo_inicial = float(monto_str) if monto_str else 0
 
-    # fallback si no vienen
     if not tipo_banco_id:
         cursor.execute("SELECT id FROM tipo_banco LIMIT 1")
         row = cursor.fetchone()
@@ -954,8 +1012,6 @@ def eliminar_banco():
     return redirect('/banco')
 
 
-
-
 # =========================
 # TIPOS DE BANCO
 # =========================
@@ -971,7 +1027,6 @@ def tipo_banco():
     tipos_banco = cursor.fetchall()
 
     return render_template('tipo_banco.html', tipos_banco=tipos_banco)
-
 
 # =========================
 # PERFIL
