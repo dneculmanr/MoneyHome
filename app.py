@@ -808,6 +808,57 @@ def familia():
 
     return render_template('familia.html', familia=familia, miembros=miembros)
 
+#Unirse a Familia
+@app.route('/familia/unirse', methods=['POST'])
+def unirse_familia():
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    familia_id = request.form.get('familia_id')
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM familia WHERE id=%s", (familia_id,))
+    familia = cursor.fetchone()
+
+    if not familia:
+        flash("La familia no existe", "danger")
+        return redirect('/familia')
+
+    cursor.execute("""
+        UPDATE usuarios SET familia_id=%s WHERE id=%s
+    """, (familia_id, session['user_id']))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    flash("Te uniste a la familia", "success")
+    return redirect('/familia')
+
+#Salir de familia
+
+@app.route('/familia/salir', methods=['POST'])
+def salir_familia():
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE usuarios SET familia_id=NULL WHERE id=%s
+    """, (session['user_id'],))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    flash("Saliste de la familia", "success")
+    return redirect('/familia')
+
+
 # =========================
 # BANCOS
 # =========================
