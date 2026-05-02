@@ -20,15 +20,23 @@
 
     <h2>Familia</h2>
 
-    {% if familia %}
+{% if familia %}
 
-    <div class="card mt-3 shadow-sm">
-        <div class="card-body">
-            <h4>{{ familia.nombre }}</h4>
-            <p>ID de familia: <strong>{{ familia.id }}</strong></p>
-            <small class="text-muted">Comparte este ID para invitar miembros</small>
+<div class="card mt-3 shadow-sm">
+    <div class="card-body">
+        <h4>{{ familia.nombre }}</h4>
+        <p>ID de familia: <strong>{{ familia.id }}</strong></p>
+        <small class="text-muted">Comparte este ID para invitar miembros</small>
+
+        <!-- 🔥 NUEVO -->
+        <div class="mt-3">
+            <form method="POST" action="/familia/salir">
+                <button class="btn btn-danger">Salir de la familia</button>
+            </form>
         </div>
+
     </div>
+</div>
 
     <div class="card mt-3 shadow-sm">
         <div class="card-body">
@@ -61,10 +69,11 @@
         <div class="card-body">
             <h5>Unirse a familia</h5>
 
-            <form action="/familia/unirse" method="POST">
-                <input name="familia_id" class="form-control mb-2" placeholder="ID de familia" required>
-                <button class="btn btn-primary">Unirse</button>
-            </form>
+    <form method="POST" action="/familia/unirse">
+        <input type="number" name="familia_id" placeholder="ID de familia" required>
+        <button class="btn btn-primary">Unirse</button>
+    </form>
+
         </div>
     </div>
 
