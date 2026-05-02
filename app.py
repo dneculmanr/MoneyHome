@@ -310,27 +310,28 @@ def mov(tipo=None):
     categorias = cursor.fetchall()
 
     cursor.execute(
-        # Para cada banco, calcular el saldo actual sumando los ingresos y restando los gastos asociados a ese banco.
-        """
-        SELECT b.id,
-               b.nombre_banco AS nombre,
-               COALESCE(
-                   b.monto + SUM(
-                       CASE
-                           WHEN m.tipo_id = 1 THEN m.monto
-                           WHEN m.tipo_id = 2 THEN -m.monto
-                           ELSE 0
-                       END
-                   ),
-                   b.monto
-               ) AS saldo_actual
-        FROM banco b
-        LEFT JOIN movimientos m ON m.banco_id = b.id
-        WHERE b.user_id = %s
-        GROUP BY b.id, b.nombre_banco, b.monto
-        ORDER BY b.id DESC
-        """,
-        (session['user_id'],)
+cursor.execute(
+    """
+    SELECT b.id,
+           b.nombre_banco AS nombre,
+           COALESCE(
+               b.monto + SUM(
+                   CASE
+                       WHEN m.tipo_id = 1 THEN m.monto
+                       WHEN m.tipo_id = 2 THEN -m.monto
+                       ELSE 0
+                   END
+               ),
+               b.monto
+           ) AS saldo_actual
+    FROM banco b
+    LEFT JOIN movimientos m ON m.banco_id = b.id
+    WHERE b.user_id = %s
+    GROUP BY b.id, b.nombre_banco, b.monto
+    ORDER BY b.id DESC
+    """,
+    (session['user_id'],)
+)
     )
     bancos = cursor.fetchall()
 
@@ -404,12 +405,11 @@ def editar_movimiento(id):
 
     #Obtener los bancos para mostrar en el selector del formulario.
     cursor.execute("""
-        SELECT b.id, b.nombre_banco AS nombre
-        FROM banco b
-        WHERE b.user_id = %s
-        ORDER BY b.id DESC
-    """, (session['user_id'],))
-    bancos = cursor.fetchall()
+    SELECT b.id, b.nombre_banco AS nombre
+    FROM banco b
+    WHERE b.user_id = %s
+    ORDER BY b.id DESC
+""", (session['user_id'],))
 
     # Validar que el movimiento a editar pertenece al usuario logueado.
     if request.method == 'POST':
@@ -468,8 +468,23 @@ def eliminar_movimiento():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("DELETE FROM movimientos WHERE id=%s AND user_id=%s",(id,session['user_id']))
-    conn.commit()
+    try:
+        # 🔥 borrar pagos primero
+        cursor.execute("DELETE FROM historial_pagos WHERE id_movimiento=%s", (id,))
+        
+        # 🔥 luego movimiento
+        cursor.execute("DELETE FROM movimientos WHERE id=%s AND user_id=%s",(id,session['user_id']))
+        
+        conn.commit()
+        flash("Movimiento eliminado correctamente", "success")
+
+    except Exception as e:
+        conn.rollback()
+        flash("No se pudo eliminar el movimiento", "danger")
+        print(e)
+
+    cursor.close()
+    conn.close()
 
     return redirect('/mov')
 
@@ -518,26 +533,26 @@ def pago_movimiento(id):
 
     # Traer bancos con saldo real para mostrar en el selector del formulario de pago.
     cursor.execute("""
-        SELECT 
-                b.id, 
-                b.nombre_banco AS nombre, 
-                b.monto,
-                COALESCE(
-                    b.monto + SUM(
-                        CASE
-                            WHEN m.tipo_id = 1 THEN m.monto
-                            WHEN m.tipo_id = 2 THEN -m.monto
-                            ELSE 0
-                        END
-                    ),
-                    b.monto
-                ) AS saldo_real
-        FROM banco b
-        LEFT JOIN movimientos m ON m.banco_id = b.id
-        WHERE b.user_id = %s
-        GROUP BY b.id, b.nombre_banco, b.monto
-        ORDER BY b.id DESC
-    """, (session['user_id'],))
+    SELECT 
+        b.id, 
+        b.nombre_banco AS nombre, 
+        b.monto,
+        COALESCE(
+            b.monto + SUM(
+                CASE
+                    WHEN m.tipo_id = 1 THEN m.monto
+                    WHEN m.tipo_id = 2 THEN -m.monto
+                    ELSE 0
+                END
+            ),
+            b.monto
+        ) AS saldo_real
+    FROM banco b
+    LEFT JOIN movimientos m ON m.banco_id = b.id
+    WHERE b.user_id = %s
+    GROUP BY b.id, b.nombre_banco, b.monto
+    ORDER BY b.id DESC
+""", (session['user_id'],))
     bancos = cursor.fetchall()
 
     # Traer el gasto específico que se va a pagar, validando que pertenece al usuario logueado y que es un gasto (tipo_id=2).
@@ -791,7 +806,7 @@ def familia():
         )
         conn.commit()
 
-        return redirect('/familia')
+        return redirect('/')
 
     cursor.execute("""
         SELECT f.* FROM familia f
@@ -824,7 +839,7 @@ def unirse_familia():
 
     if not familia:
         flash("La familia no existe", "danger")
-        return redirect('/familia')
+        return redirect('/')
 
     cursor.execute("""
         UPDATE usuarios SET familia_id=%s WHERE id=%s
@@ -835,7 +850,7 @@ def unirse_familia():
     conn.close()
 
     flash("Te uniste a la familia", "success")
-    return redirect('/familia')
+    return redirect('/')
 
 #Salir de familia
 
@@ -938,28 +953,29 @@ def bancos():
     cursor = conn.cursor(dictionary=True)
 
     try:
+                
         cursor.execute("""
-            SELECT
-                b.id,
-                b.nombre_banco AS nombre,
-                b.monto,
-                COALESCE(
-                    b.monto + SUM(
-                        CASE
-                            WHEN m.tipo_id = 1 THEN m.monto
-                            WHEN m.tipo_id = 2 THEN -m.monto
-                            ELSE 0
-                        END
-                    ),
-                    b.monto
-                ) AS saldo_actual
-            FROM banco b
-            LEFT JOIN movimientos m ON m.banco_id = b.id
-            WHERE b.user_id = %s
-            GROUP BY b.id, b.nombre_banco, b.monto
-            ORDER BY b.id DESC
-        """, (session['user_id'],))
-
+    SELECT
+        b.id,
+        b.nombre_banco AS nombre,
+        b.monto,
+        COALESCE(
+            b.monto + SUM(
+                CASE
+                    WHEN m.tipo_id = 1 THEN m.monto
+                    WHEN m.tipo_id = 2 THEN -m.monto
+                    ELSE 0
+                END
+            ),
+            b.monto
+        ) AS saldo_actual
+    FROM banco b
+    LEFT JOIN movimientos m ON m.banco_id = b.id
+    WHERE b.user_id = %s
+    GROUP BY b.id, b.nombre_banco, b.monto
+    ORDER BY b.id DESC
+""", (session['user_id'],))
+        
         bancos = cursor.fetchall()
 
     except mysql.connector.Error:
