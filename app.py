@@ -48,7 +48,7 @@ def login():
             session['user_id'] = user['id']
             session['nombre'] = user['nombre']
 
-            # 🔥 LÓGICA DE FLUJO
+            # LÓGICA DE FLUJO
             cursor.execute("SELECT COUNT(*) AS total FROM banco WHERE user_id=%s", (user['id'],))
             resultado = cursor.fetchone()
 
@@ -95,7 +95,7 @@ def recuperar():
 
             link = f"http://127.0.0.1:5000/reset/{token}"
 
-            # 🔥 ENVÍO REAL
+            # ENVÍO REAL
             enviar_email(
                 email,
                 "Recuperación de contraseña - MoneyHome",
@@ -144,7 +144,7 @@ def register():
 
         email = request.form['email']
 
-        # 🔍 VALIDAR SI YA EXISTE
+        # VALIDAR SI YA EXISTE
         cursor.execute("SELECT id FROM usuarios WHERE email=%s", (email,))
         existente = cursor.fetchone()
 
@@ -154,7 +154,7 @@ def register():
             conn.close()
             return redirect('/register')
 
-        # ✅ INSERTAR SI NO EXISTE
+        # INSERTAR SI NO EXISTE
         cursor.execute("""
             INSERT INTO usuarios (nombre, email, password)
             VALUES (%s, %s, %s)
@@ -192,14 +192,14 @@ def index():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # 🔥 VALIDAR SI TIENE BANCO
+    # VALIDAR SI TIENE BANCO
     cursor.execute(
         "SELECT id FROM banco WHERE user_id=%s LIMIT 1",
         (session['user_id'],)
     )
     banco = cursor.fetchone()
 
-    # 👉 SI NO TIENE BANCO → FORZAR FLUJO
+    # SI NO TIENE BANCO → FORZAR FLUJO
     if not banco:
         cursor.close()
         conn.close()
@@ -221,7 +221,7 @@ def index():
     gastos = data['gastos']
 
     # =========================
-    # 🔥 NUEVO: SALDO BANCOS
+    #  NUEVO: SALDO BANCOS
     # =========================
     cursor.execute("""
         SELECT COALESCE(SUM(monto),0) AS saldo_bancos
@@ -232,7 +232,7 @@ def index():
     saldo_bancos = cursor.fetchone()['saldo_bancos']
 
     # =========================
-    # 🔥 SALDO FINAL REAL
+    #  SALDO FINAL REAL
     # =========================
     saldo = saldo_bancos + ingresos - gastos
 
@@ -538,8 +538,8 @@ def pago():
 
     return render_template('pago.html', bancos=bancos, gastos=gastos, movimiento=None, saldo_banco=None, pagos=pagos)
 # ENDPOINT PARA REALIZAR EL PAGO DE UN GASTO. 
-# Este endpoint maneja tanto la visualización de la página de pago para un gasto específico (GET) 
-# como el procesamiento del pago cuando se envía el formulario (POST).
+    # Este endpoint maneja tanto la visualización de la página de pago para un gasto específico (GET) 
+    # como el procesamiento del pago cuando se envía el formulario (POST).
 @app.route('/mov/pago/<int:id>', methods=['GET', 'POST'])
 def pago_movimiento(id):
     if 'user_id' not in session:
@@ -548,7 +548,7 @@ def pago_movimiento(id):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # Traer bancos con saldo real para mostrar en el selector del formulario de pago.
+    # Traer bancos con saldo real para mostrar en el selector de bancos en la página de pago.
     cursor.execute("""
     SELECT 
         b.id, 
@@ -572,7 +572,7 @@ def pago_movimiento(id):
 """, (session['user_id'],))
     bancos = cursor.fetchall()
 
-    # Traer el gasto específico que se va a pagar, validando que pertenece al usuario logueado y que es un gasto (tipo_id=2).
+    # Validar que el movimiento a pagar pertenece al usuario logueado y es un gasto.
     cursor.execute("""
         SELECT m.*, c.nombre AS categoria
         FROM movimientos m
@@ -584,7 +584,7 @@ def pago_movimiento(id):
         flash("Movimiento no encontrado o no es un gasto", "danger")
         return redirect('/mov')
 
-    # Determinar el banco seleccionado para el pago, ya sea por POST (cuando se envía el formulario) o por GET (cuando se carga la página por primera vez).
+    # Determinar el banco seleccionado para el pago, ya sea por el formulario enviado (POST) o por el gasto a pagar (GET).
     banco_id = None
     if request.method == 'POST':
         banco_id = request.form.get('banco_id')
@@ -652,7 +652,8 @@ def pago_movimiento(id):
 
         return redirect('/mov')
 
-    # Traer nuevamente el listado de gastos del usuario para mostrar en la página de pago, ya que puede haber cambios en el monto pendiente después de realizar un pago.
+    # Traer nuevamente el listado de gastos del usuario para mostrar en la página de pago, 
+    # ya que puede haber cambios en el monto pendiente después de realizar un pago.
     cursor.execute("""
         SELECT m.id, m.descripcion, m.monto, m.monto_pagado, m.saldo_pendiente
         FROM movimientos m
@@ -911,7 +912,9 @@ def salir_familia():
 # BANCOS
 # =========================
 
-# 🔥 AHORA SOPORTA /banco Y /banco/<id>
+# Este endpoint maneja tanto 
+    # la visualización del listado de bancos (GET) 
+    # como la edición de un banco específico (POST).
 @app.route('/banco', methods=['GET'])
 @app.route('/banco/<int:id>', methods=['GET', 'POST'])
 def banco(id=None):
@@ -922,9 +925,9 @@ def banco(id=None):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # =========================
+
     # EDITAR BANCO (POST)
-    # =========================
+
     if id and request.method == 'POST':
 
         nombre_banco = request.form.get('nombre_banco', '').strip()
@@ -946,9 +949,9 @@ def banco(id=None):
         flash("Banco actualizado correctamente", "success")
         return redirect('/banco')
 
-    # =========================
+
     # MOSTRAR EDITAR
-    # =========================
+
     if id:
         cursor.execute("""
             SELECT * FROM banco
@@ -966,17 +969,14 @@ def banco(id=None):
 
         return render_template('editar_banco.html', banco=banco)
 
-    # =========================
-    # LISTADO (usa tu función actual)
-    # =========================
     cursor.close()
     conn.close()
     return bancos()
 
 
-# =========================
+
 # LISTADO BANCOS
-# =========================
+
 @app.route('/bancos', methods=['GET'])
 def bancos():
     if 'user_id' not in session:
@@ -1014,7 +1014,7 @@ def bancos():
     except mysql.connector.Error:
         bancos = []
 
-    # 🔥 TIPOS
+    # Traer tipos de banco y cuenta para mostrar en el formulario de creación/edición de banco.
     cursor.execute("SELECT id, nombre FROM tipo_banco ORDER BY nombre ASC")
     tipos_banco = cursor.fetchall()
 
@@ -1032,9 +1032,8 @@ def bancos():
     )
 
 
-# =========================
+
 # CREAR BANCO
-# =========================
 @app.route('/banco/crear', methods=['POST'])
 def crear_banco():
     if 'user_id' not in session:
@@ -1085,9 +1084,8 @@ def crear_banco():
     return redirect('/')
 
 
-# =========================
 # ELIMINAR BANCO
-# =========================
+
 @app.route('/banco/eliminar', methods=['POST'])
 def eliminar_banco():
     if 'user_id' not in session:
@@ -1112,9 +1110,9 @@ def eliminar_banco():
     return redirect('/banco')
 
 
-# =========================
+
 # TIPOS DE BANCO
-# =========================
+
 @app.route('/tipo_banco', methods=['GET'])
 def tipo_banco():
     if 'user_id' not in session:
