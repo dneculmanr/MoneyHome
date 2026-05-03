@@ -122,6 +122,75 @@ CREATE TABLE historial_pagos (
     usuario VARCHAR(100),
     FOREIGN KEY (id_movimiento) REFERENCES movimientos(id)
 );
+
+CREATE TABLE estado_movimiento (
+    id   TINYINT PRIMARY KEY,
+    nombre VARCHAR(20) NOT NULL
+);
+ALTER TABLE movimientos 
+ADD COLUMN estado_id TINYINT NOT NULL DEFAULT 1,
+ADD CONSTRAINT fk_estado_mov FOREIGN KEY (estado_id) REFERENCES estado_movimiento(id);
+
+3. CREAR LOS TRIGGER
+-- Cada vez que se inserta un registro en historial_pagos, actumaticamante actualiza los movimeintos.
+DELIMITER $$
+CREATE TRIGGER actualizar_monto_pagado
+AFTER INSERT ON historial_pagos
+FOR EACH ROW
+BEGIN
+    UPDATE movimientos
+    SET monto_pagado = monto_pagado + NEW.monto_pago
+    WHERE id = NEW.id_movimiento;
+END$$
+DELIMITER ;
+
+--Actualizar banco cuando se registra un pago.
+DELIMITER $$
+CREATE TRIGGER actualizar_saldo_banco
+AFTER INSERT ON historial_pagos
+FOR EACH ROW
+BEGIN
+    UPDATE banco
+    SET saldo_actual = saldo_actual - NEW.monto_pago
+    WHERE id = NEW.id_banco;
+END$$
+DELIMITER ;
+
+4. POBLAR TABLAS
+
+-- Poblar tabla estado_movimiento
+INSERT INTO estado_movimiento VALUES (1, 'Pendiente'), (2, 'Pagado'), (3, 'Parcial');
+
+--Poblar tabla tipo_banco
+INSERT INTO tipo_banco (id, nombre) VALUES
+(3,  'Banco BCI'),
+(12, 'Banco BTG Pactual Chile'),
+(10, 'Banco Consorcio'),
+(13, 'Banco Coopeuch'),
+(1,  'Banco de Chile'),
+(9,  'Banco Falabella'),
+(11, 'Banco Internacional'),
+(5,  'Banco Itaú Chile'),
+(8,  'Banco Ripley'),
+(4,  'Banco Santander Chile'),
+(7,  'Banco Security'),
+(2,  'BancoEstado'),
+(6,  'Scotiabank Chile');
+
+--Poblar tipo_cuenta
+INSERT INTO tipo_cuenta (id, nombre) VALUES
+(1, 'Cuenta Corriente'),
+(2, 'Cuenta de Ahorro'),
+(4, 'Cuenta RUT'),
+(3, 'Cuenta Vista');
+
+--Poblar tipo_movimeinto
+INSERT INTO tipo_movimiento (id, nombre) VALUES
+(1, 'ingreso'),
+(2, 'gasto'),
+(3, 'transferencia');
+
+
 🔌 Configuración del Proyecto
 1. Clonar repositorio
 git clone https://github.com/dneculmanr/MoneyHome.git
