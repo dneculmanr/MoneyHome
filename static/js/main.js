@@ -58,13 +58,13 @@ document.addEventListener("DOMContentLoaded", function () {
     // =========================
     // BANCO
     // =========================
-    //Saldo iniciaal con separador de miles
+    //Saldo inicial con separador de miles
     const saldoInput = document.getElementById("saldo_inicial");
     if (saldoInput) {
-        // Formatear valor inicial al cargar
-        let raw = saldoInput.value.replace(/[\.,]/g, '');
-        if (!isNaN(raw) && raw !== "") {
-            saldoInput.value = Number(raw).toLocaleString('es-CL');
+        // Formatear valor inicial al cargar (parseFloat maneja decimales de Python)
+        var numInicial = parseFloat(saldoInput.value);
+        if (!isNaN(numInicial)) {
+            saldoInput.value = Math.round(numInicial).toLocaleString('es-CL');
         }
         saldoInput.addEventListener("input", function () {
             let value = this.value.replace(/[\.,]/g, '');
@@ -179,40 +179,49 @@ document.addEventListener("DOMContentLoaded", function () {
     // PAGO
     // =========================
 
-    // Actualizar saldo mostrado al cambiar banco
-    document.addEventListener('DOMContentLoaded', function() {
-        var bancoSelect = document.getElementById('banco1');
-        var saldoBanco = document.getElementById('saldoBanco');
+    // Formatear opciones del selector de gastos
+    var gastoSelect = document.getElementById('gastoSelect');
+    if (gastoSelect) {
+        gastoSelect.querySelectorAll('option[value]').forEach(function(opt) {
+            if (!opt.value) return;
+            var match = opt.textContent.match(/^(.*)\s-\s\$?([\d.,]+)$/);
+            if (match) {
+                var num = parseFloat(match[2]);
+                if (!isNaN(num)) {
+                    opt.textContent = match[1] + ' - $' + Math.round(num).toLocaleString('es-CL');
+                }
+            }
+        });
+
+        gastoSelect.addEventListener('change', function() {
+            var id = this.value;
+            if (id) window.location.href = '/mov/pago/' + id;
+        });
+    }
+
+    // Formatear campos de monto al cargar
+    ['montoPendiente', 'montoDetalle'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && el.value) {
+            var num = parseFloat(el.value);
+            if (!isNaN(num)) {
+                el.value = Math.round(num).toLocaleString('es-CL');
+            }
+        }
+    });
+
+    // Saldo actual del banco según selector
+    var bancoSelect = document.getElementById('banco1');
+    var saldoBanco = document.getElementById('saldoBanco');
+    if (bancoSelect && saldoBanco) {
         function updateSaldo() {
             var selected = bancoSelect.options[bancoSelect.selectedIndex];
-            saldoBanco.value = selected ? selected.getAttribute('data-saldo') : '';
-            }
-            bancoSelect.addEventListener('change', updateSaldo);
-            updateSaldo();
-    });
-
-    document.getElementById('gastoSelect').addEventListener('change', function() {
-        var id = this.value;
-        if (id) {
-            window.location.href = '/mov/pago/' + id;
+            var raw = selected ? parseFloat(selected.getAttribute('data-saldo')) : NaN;
+            saldoBanco.value = !isNaN(raw) ? Math.round(raw).toLocaleString('es-CL') : '';
         }
-    }); 
-
-    // Script para actualizar el saldo del banco al cambiar el selector
-    document.addEventListener('DOMContentLoaded', function() {
-        var bancoSelect = document.getElementById('banco1');
-        var saldoInput = document.getElementById('saldoBanco');
-            if (bancoSelect && saldoInput) {
-                function updateSaldo() {
-                    var selected = bancoSelect.options[bancoSelect.selectedIndex];
-                    var saldo = selected.getAttribute('data-saldo');
-                        saldoInput.value = saldo !== null ? saldo : '';
-                        }
-                bancoSelect.addEventListener('change', updateSaldo);
-    // Inicializar al cargar
-    updateSaldo();
+        bancoSelect.addEventListener('change', updateSaldo);
+        updateSaldo();
     }
-    });
 
 
 });

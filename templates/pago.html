@@ -49,7 +49,7 @@
         </div>
         <div class="mb-2">
             <label for="monto1" class="form-label">Monto</label>
-            <input type="text" id="monto1" class="form-control" value="{{ movimiento.monto if movimiento else '' }}" readonly>
+            <input type="text" id="montoDetalle" class="form-control" value="{{ movimiento.monto if movimiento else '' }}" readonly>
         </div>
         <div class="mb-2">
             <label for="fecha1" class="form-label">Fecha</label>
@@ -96,12 +96,36 @@
             <!-- Monto del gasto -->
             <div class="mb-2">
                 <label for="monto1" class="form-label">Monto</label>
-                <input type="text" id="monto1" name="monto" class="form-control" value="{{ movimiento.monto if movimiento else '' }}" placeholder="Monto del gasto" autocomplete="off" {% if not movimiento %}disabled{% endif %}>
+                <input type="text" id="montoPendiente" name="monto" class="form-control" value="{{ movimiento.saldo_pendiente if movimiento else '' }}" placeholder="Monto pendiente" autocomplete="off" {% if not movimiento %}disabled{% endif %}>
             </div>
             <button type="submit" class="btn btn-success" {% if not movimiento %}disabled{% endif %}>Pagar</button>
         </form>
     </div>
     </ul>
+<!--Historial de pagos realizados -->
+<div class="container mt-4">
+    <h3>Historial de Pagos</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Descripción</th>
+                <th>Monto</th>
+                <th>Banco</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pago in pagos %}
+            <tr>
+                <td>{{ pago.fecha }}</td>
+                <td>{{ pago.descripcion }}</td>
+                <td>${{ "{:,.0f}".format(pago.monto | float).replace(",", ".") }}</td>
+                <td>{{ pago.banco }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
 
 </main>

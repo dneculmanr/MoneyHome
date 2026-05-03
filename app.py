@@ -336,18 +336,18 @@ cursor.execute(
     bancos = cursor.fetchall()
 
 
-    filtro = "AND m.tipo_id IN (1,2)"
+    filtro = "AND (m.tipo_id = 1 OR (m.tipo_id = 2 AND m.estado_id IN (1, 3)))"
     if tipo == 'ingresos':
         filtro = "AND m.tipo_id=1"
     elif tipo == 'gastos':
-        filtro = "AND m.tipo_id=2"
+        filtro = "AND m.tipo_id=2 AND m.estado_id IN (1, 3)"
     elif tipo == 'transferencias':
         filtro = "AND m.tipo_id=3"
     # mostrar solo los movimientos del usuario y su familia (si tiene)
     cursor.execute(f"""
-        SELECT m.id, m.user_id, m.banco_id, m.monto, m.categoria_id, m.tipo_id, m.fecha, m.descripcion,
+        SELECT m.id, m.user_id, m.banco_id, m.monto, m.saldo_pendiente, m.categoria_id, m.tipo_id, m.fecha, m.descripcion,
                c.nombre AS categoria,
-               CASE 
+               CASE
                    WHEN m.tipo_id = 1 THEN 'ingreso'
                    WHEN m.tipo_id = 2 THEN 'gasto'
                    WHEN m.tipo_id = 3 THEN 'transferencia'
@@ -514,12 +514,29 @@ def pago():
             c.nombre AS categoria
         FROM movimientos m
         LEFT JOIN categorias c ON m.categoria_id = c.id
-        WHERE m.user_id = %s AND m.tipo_id = 2
+        WHERE m.user_id = %s AND m.tipo_id = 2 AND m.estado_id IN (1, 3)
         ORDER BY m.fecha DESC, m.id DESC
     """, (session['user_id'],))
     gastos = cursor.fetchall()
 
-    return render_template('pago.html', bancos=bancos, gastos=gastos, movimiento=None, saldo_banco=None)
+    cursor.execute("""
+        SELECT
+            hp.fecha_pago AS fecha,
+            m.descripcion,
+            hp.monto_pago AS monto,
+            b.nombre_banco AS banco
+        FROM historial_pagos hp
+        LEFT JOIN movimientos m ON hp.id_movimiento = m.id
+        LEFT JOIN banco b ON hp.id_banco = b.id
+        WHERE hp.usuario = %s
+        ORDER BY hp.fecha_pago DESC
+    """, (session['user_id'],))
+    pagos = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return render_template('pago.html', bancos=bancos, gastos=gastos, movimiento=None, saldo_banco=None, pagos=pagos)
 # ENDPOINT PARA REALIZAR EL PAGO DE UN GASTO. 
 # Este endpoint maneja tanto la visualización de la página de pago para un gasto específico (GET) 
 # como el procesamiento del pago cuando se envía el formulario (POST).
@@ -620,33 +637,48 @@ def pago_movimiento(id):
             UPDATE banco SET monto = monto - %s WHERE id = %s AND user_id = %s
         """, (monto_pagado, banco_id, session['user_id']))
 
-        conn.commit()
-
-
-        # Actualizar el monto pagado y el saldo pendiente del gasto
+        # Actualizar estado del gasto
         cursor.execute("SELECT saldo_pendiente FROM movimientos WHERE id=%s AND user_id=%s", (id, session['user_id']))
         row = cursor.fetchone()
-        # Si el saldo pendiente es 0 o menor, eliminar el gasto. Si no, mostrar mensaje de pago parcial registrado.
+
         if row and row['saldo_pendiente'] <= 0:
-            cursor.execute("DELETE FROM historial_pagos WHERE id_movimiento=%s", (id,))
-            cursor.execute("DELETE FROM movimientos WHERE id=%s AND user_id=%s", (id, session['user_id']))
+            cursor.execute("UPDATE movimientos SET estado_id = 2 WHERE id=%s AND user_id=%s", (id, session['user_id']))
             conn.commit()
-            flash("Pago realizado y gasto eliminado correctamente", "success")
-        # Si el saldo pendiente es mayor a 0, mostrar mensaje de pago parcial registrado.
+            flash("Pago realizado correctamente", "success")
         else:
+            cursor.execute("UPDATE movimientos SET estado_id = 3 WHERE id=%s AND user_id=%s", (id, session['user_id']))
+            conn.commit()
             flash("Pago parcial registrado correctamente", "success")
+
         return redirect('/mov')
 
     # Traer nuevamente el listado de gastos del usuario para mostrar en la página de pago, ya que puede haber cambios en el monto pendiente después de realizar un pago.
     cursor.execute("""
         SELECT m.id, m.descripcion, m.monto, m.monto_pagado, m.saldo_pendiente
         FROM movimientos m
-        WHERE m.user_id = %s AND m.tipo_id = 2
+        WHERE m.user_id = %s AND m.tipo_id = 2 AND m.estado_id IN (1, 3)
         ORDER BY m.fecha DESC, m.id DESC
     """, (session['user_id'],))
     gastos = cursor.fetchall()
 
-    return render_template('pago.html', movimiento=movimiento, bancos=bancos, gastos=gastos, saldo_banco=saldo_banco)
+    cursor.execute("""
+        SELECT
+            hp.fecha_pago AS fecha,
+            m.descripcion,
+            hp.monto_pago AS monto,
+            b.nombre_banco AS banco
+        FROM historial_pagos hp
+        LEFT JOIN movimientos m ON hp.id_movimiento = m.id
+        LEFT JOIN banco b ON hp.id_banco = b.id
+        WHERE hp.usuario = %s
+        ORDER BY hp.fecha_pago DESC
+    """, (session['user_id'],))
+    pagos = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return render_template('pago.html', movimiento=movimiento, bancos=bancos, gastos=gastos, saldo_banco=saldo_banco, pagos=pagos)
 
 
 # =========================
