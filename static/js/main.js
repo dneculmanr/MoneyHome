@@ -55,6 +55,25 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
     });
+    // =========================
+    // BANCO
+    // =========================
+    //Saldo iniciaal con separador de miles
+    const saldoInput = document.getElementById("saldo_inicial");
+    if (saldoInput) {
+        // Formatear valor inicial al cargar
+        let raw = saldoInput.value.replace(/[\.,]/g, '');
+        if (!isNaN(raw) && raw !== "") {
+            saldoInput.value = Number(raw).toLocaleString('es-CL');
+        }
+        saldoInput.addEventListener("input", function () {
+            let value = this.value.replace(/[\.,]/g, '');
+            if (!isNaN(value) && value !== "") {
+                this.value = Number(value).toLocaleString('es-CL');
+            }
+        });
+    }
+
 
     // =========================
     // MODAL EDITAR CATEGORIA
@@ -89,7 +108,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // =========================
-    // TRANSFERENCIA (SAFE)
+    // TRANSFERENCIA 
     // =========================
     function limpiarNumero(valor) {
         return valor.replace(/[\.,]/g, '');
@@ -194,5 +213,6 @@ document.addEventListener("DOMContentLoaded", function () {
     updateSaldo();
     }
     });
+
 
 });
