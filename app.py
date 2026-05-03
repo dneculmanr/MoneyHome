@@ -469,10 +469,10 @@ def eliminar_movimiento():
     cursor = conn.cursor()
 
     try:
-        # 🔥 borrar pagos primero
+        # borrar pagos primero
         cursor.execute("DELETE FROM historial_pagos WHERE id_movimiento=%s", (id,))
         
-        # 🔥 luego movimiento
+        # luego movimiento
         cursor.execute("DELETE FROM movimientos WHERE id=%s AND user_id=%s",(id,session['user_id']))
         
         conn.commit()
