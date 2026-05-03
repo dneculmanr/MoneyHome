@@ -607,12 +607,13 @@ def pago_movimiento(id):
         # Registrar el pago en historial_pagos
         cursor.execute("""
             INSERT INTO historial_pagos (
-                    id_movimiento, 
-                    fecha_pago, 
-                    monto_pago, 
+                    id_movimiento,
+                    id_banco,
+                    fecha_pago,
+                    monto_pago,
                     usuario)
-            VALUES (%s, NOW(), %s, %s)
-        """, (id, monto_pagado, session['user_id']))
+            VALUES (%s, %s, NOW(), %s, %s)
+        """, (id, banco_id, monto_pagado, session['user_id']))
 
         # Descontar el saldo del banco seleccionado
         cursor.execute("""
@@ -663,7 +664,7 @@ def crear_transferencia():
     fecha = request.form['fecha']
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
 
     # 1. Validar que el banco origen tenga saldo suficiente para la transferencia.
     cursor.execute("""
@@ -957,7 +958,7 @@ def bancos():
         cursor.execute("""
     SELECT
         b.id,
-        b.nombre_banco AS nombre,
+        b.nombre_banco,
         b.monto,
         COALESCE(
             b.monto + SUM(
