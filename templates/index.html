@@ -6,6 +6,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/CSS/styles.css">
     <script src="/static/js/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script><!-- Chart.js para gráficos -->
+
 
 </head>
 <!--bg-light: pone un fondo blanco; 
@@ -60,17 +62,43 @@ min-vh-100: establece la altura mínima al 100% de la ventana gráfica -->
             </div>
         </div>
 
-        <!--Saldo-->
+        <!--Saldo de bancos-->
         <div class="col-md-4">
             <div class="card bg-primary text-white shadow">
                 <div class="card-body">
-                    <h5>Saldo</h5>
+                    <h5>Saldo de Bancos</h5>
                     <h3>${{ "{:,.0f}".format(saldo).replace(",", ".") }}</h3>
                 </div>
             </div>
         </div>
 
     </div>
+
+    <!-- GRAFICOS -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3 mb-md-0">
+            <div class="card shadow h-100">
+                <div class="card-body">
+                    <h6 class="mb-2">Gastos del mes por categoría</h6>
+                    <div style="position:relative; height:200px;">
+                        <canvas id="graficoDona"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card shadow h-100">
+                <div class="card-body">
+                    <h6 class="mb-2">Últimos 6 meses</h6>
+                    <div style="position:relative; height:200px;">
+                        <canvas id="graficoBarras"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
 
     <!-- TABLA -->
     <div class="card shadow">
@@ -113,12 +141,16 @@ min-vh-100: establece la altura mínima al 100% de la ventana gráfica -->
 
         </div>
     </div>
-
+                
         </div>
     </div>
 </div>
 </main>
 {% include 'footer.html' %}
+
+<script id="dashboard-data" type="application/json">
+{{ {"mensual": grafico_mensual, "categorias": gastos_categoria} | tojson }}
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -126,6 +158,42 @@ setTimeout(() => {
     const alert = document.querySelector('.alert');
     if (alert) alert.remove();
 }, 3000);
+
+const _d = JSON.parse(document.getElementById('dashboard-data').textContent);
+const mensual = _d.mensual.reverse();
+const colores = ['#0d6efd','#dc3545','#fd7e14','#6f42c1','#20c997','#ffc107','#0dcaf0','#198754'];
+
+new Chart(document.getElementById('graficoDona'), {
+    type: 'doughnut',
+    data: {
+        labels: _d.categorias.map(c => c.categoria),
+        datasets: [{
+            data: _d.categorias.map(c => c.total),
+            backgroundColor: colores,
+            borderWidth: 0
+        }]
+    },
+    options: {
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } }
+    }
+});
+
+new Chart(document.getElementById('graficoBarras'), {
+    type: 'bar',
+    data: {
+        labels: mensual.map(m => m.mes),
+        datasets: [
+            { label: 'Ingresos', data: mensual.map(m => m.ingresos), backgroundColor: '#198754' },
+            { label: 'Gastos',   data: mensual.map(m => m.gastos),   backgroundColor: '#dc3545' }
+        ]
+    },
+    options: {
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
+        scales: { y: { beginAtZero: true, ticks: { font: { size: 11 } } } }
+    }
+});
 </script>
 </body>
 </html>

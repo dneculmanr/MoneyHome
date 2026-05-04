@@ -19,6 +19,12 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
 // =========================
+// DASHBOARD GRAFICOS
+// =========================
+//Grafico de torta para gastos por categoria
+
+
+// =========================
 // VALIDACIÓN FORM (SUBMIT)
 // =========================
     const forms = document.querySelectorAll("form");

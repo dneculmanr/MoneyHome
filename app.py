@@ -182,7 +182,7 @@ def logout():
     return redirect('/login')
 
 # =========================
-# DASHBOARD (CON FAMILIA + FLUJO PRO)
+# DASHBOARD
 # =========================
 @app.route('/')
 def index():
@@ -205,9 +205,9 @@ def index():
         conn.close()
         return redirect('/banco')
 
-    # =========================
-    # INGRESOS Y GASTOS
-    # =========================
+
+# --------------------INGRESOS Y GASTOS----------------------
+
     cursor.execute("""
         SELECT 
             COALESCE(SUM(CASE WHEN tipo_id = 1 THEN monto ELSE 0 END),0) AS ingresos,
@@ -220,9 +220,9 @@ def index():
     ingresos = data['ingresos']
     gastos = data['gastos']
 
-    # =========================
-    #  NUEVO: SALDO BANCOS
-    # =========================
+
+#  -------------------NUEVO: SALDO BANCOS-----------------------
+
     cursor.execute("""
         SELECT COALESCE(SUM(monto),0) AS saldo_bancos
         FROM banco
@@ -231,10 +231,39 @@ def index():
 
     saldo_bancos = cursor.fetchone()['saldo_bancos']
 
-    # =========================
+
     #  SALDO FINAL REAL
-    # =========================
+
     saldo = saldo_bancos + ingresos - gastos
+
+# --------------------GRAFICO DE TORTA GASTOS POR CATEGORIA----------------------
+    cursor.execute("""
+        SELECT 
+            DATE_FORMAT(fecha, '%Y-%m') AS mes, 
+            SUM(CASE WHEN tipo_id=1 THEN monto ELSE 0 END) AS ingresos,
+            SUM(CASE WHEN tipo_id=2 THEN monto ELSE 0 END) AS gastos
+        FROM movimientos WHERE user_id=%s
+        GROUP BY mes ORDER BY mes DESC LIMIT 6
+    """, (session['user_id'],))
+    grafico_mensual = [
+        {'mes': r['mes'], 'ingresos': float(r['ingresos']), 'gastos': float(r['gastos'])}
+        for r in cursor.fetchall()
+    ]
+
+    cursor.execute("""
+        SELECT c.nombre AS categoria, SUM(m.monto) AS total
+        FROM movimientos m
+        LEFT JOIN categorias c ON m.categoria_id = c.id
+        WHERE m.user_id=%s AND m.tipo_id=2
+          AND YEAR(m.fecha) = YEAR(CURDATE())
+          AND MONTH(m.fecha) = MONTH(CURDATE())
+        GROUP BY c.nombre
+        ORDER BY total DESC
+    """, (session['user_id'],))
+    gastos_categoria = [
+        {'categoria': r['categoria'] or 'Sin categoría', 'total': float(r['total'])}
+        for r in cursor.fetchall()
+    ]
 
     # =========================
     # MOVIMIENTOS
@@ -261,7 +290,9 @@ def index():
         ingresos=ingresos,
         gastos=gastos,
         saldo=saldo,
-        movimientos=movimientos
+        movimientos=movimientos,
+        grafico_mensual=grafico_mensual,
+        gastos_categoria=gastos_categoria
     )
 
 # =========================
@@ -463,7 +494,7 @@ def editar_movimiento(id):
         bancos=bancos
     )
 # ==================================
-# BOTON EDITAR - ELIMNAR MOVIMIENTO
+# BOTON EDITAR - BOTON ELIMINAR MOVIMIENTO
 # ==================================
 
 # Endpoint para mostrar la confirmación de eliminación de un movimiento.
