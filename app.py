@@ -336,7 +336,7 @@ cursor.execute(
     bancos = cursor.fetchall()
 
 
-    filtro = "AND (m.tipo_id = 1 OR (m.tipo_id = 2 AND m.estado_id IN (1, 3)))"
+    filtro = "AND (m.tipo_id = 1 OR (m.tipo_id = 2 AND m.estado_id IN (1, 3)) OR m.tipo_id = 3)"
     if tipo == 'ingresos':
         filtro = "AND m.tipo_id=1"
     elif tipo == 'gastos':
@@ -378,6 +378,31 @@ cursor.execute(
     """, (session['user_id'], session['user_id']))
     ingresos_transferencia = cursor.fetchall()
 
+    editar_transferencia = None
+    if tipo == 'transferencias' and request.args.get('editar_id'):
+        editar_id = int(request.args.get('editar_id'))
+        cursor.execute("SELECT * FROM movimientos WHERE id=%s AND user_id=%s AND tipo_id=3", (editar_id, session['user_id']))
+        mov_click = cursor.fetchone()
+        if mov_click:
+            cursor.execute("""
+                SELECT * FROM movimientos
+                WHERE user_id=%s AND tipo_id=3 AND fecha=%s AND ABS(monto)=%s AND id!=%s
+                LIMIT 1
+            """, (session['user_id'], mov_click['fecha'], abs(mov_click['monto']), editar_id))
+            par = cursor.fetchone()
+            if par:
+                if mov_click['monto'] < 0:
+                    origen, destino = mov_click, par
+                else:
+                    origen, destino = par, mov_click
+                editar_transferencia = {
+                    'editar_id': editar_id,
+                    'banco_origen_id': origen['banco_id'],
+                    'banco_destino_id': destino['banco_id'],
+                    'monto': abs(origen['monto']),
+                    'fecha': str(origen['fecha']),
+                }
+
     cursor.close()
     conn.close()
 
@@ -387,7 +412,8 @@ cursor.execute(
         categorias=categorias,
         bancos=bancos,
         tipo=tipo,
-        ingresos_transferencia=ingresos_transferencia
+        ingresos_transferencia=ingresos_transferencia,
+        editar_transferencia=editar_transferencia
     )
 
 # =========================
@@ -399,27 +425,26 @@ def editar_movimiento(id):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # Traer bancos para mostrar en el selector del formulario.
-    cursor.execute("SELECT * FROM banco WHERE user_id=%s", (session['user_id'],))
+    cursor.execute("SELECT * FROM movimientos WHERE id=%s AND user_id=%s", (id, session['user_id']))
+    movimiento = cursor.fetchone()
+
+    if movimiento and movimiento['tipo_id'] == 3:
+        cursor.close()
+        conn.close()
+        return redirect(f'/mov/transferencias?editar_id={id}')
+
+    cursor.execute("SELECT id, nombre_banco AS nombre FROM banco WHERE user_id=%s", (session['user_id'],))
     bancos = cursor.fetchall()
 
-    #Obtener los bancos para mostrar en el selector del formulario.
-    cursor.execute("""
-    SELECT b.id, b.nombre_banco AS nombre
-    FROM banco b
-    WHERE b.user_id = %s
-    ORDER BY b.id DESC
-""", (session['user_id'],))
-
-    # Validar que el movimiento a editar pertenece al usuario logueado.
     if request.method == 'POST':
+        monto = request.form['monto'].replace('.', '').replace(',', '')
         cursor.execute("""
             UPDATE movimientos
             SET descripcion=%s, monto=%s, categoria_id=%s, fecha=%s
             WHERE id=%s AND user_id=%s
         """, (
             request.form['descripcion'],
-            request.form['monto'],
+            monto,
             request.form['categoria_id'],
             request.form['fecha'],
             id,
@@ -428,9 +453,6 @@ def editar_movimiento(id):
 
         conn.commit()
         return redirect('/mov')
-
-    cursor.execute("SELECT * FROM movimientos WHERE id=%s",(id,))
-    movimiento = cursor.fetchone()
 
     cursor.execute("SELECT * FROM categorias")
     categorias = cursor.fetchall()
@@ -759,6 +781,66 @@ def crear_transferencia():
     return redirect('/mov')
 
 
+@app.route('/mov/transferencia/editar/<int:id>', methods=['POST'])
+def editar_transferencia(id):
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM movimientos WHERE id=%s AND user_id=%s AND tipo_id=3", (id, session['user_id']))
+    mov = cursor.fetchone()
+
+    if not mov:
+        flash("Transferencia no encontrada", "danger")
+        return redirect('/mov/transferencias')
+
+    cursor.execute("""
+        SELECT * FROM movimientos
+        WHERE user_id=%s AND tipo_id=3 AND fecha=%s AND ABS(monto)=%s AND id!=%s
+        LIMIT 1
+    """, (session['user_id'], mov['fecha'], abs(mov['monto']), id))
+    par = cursor.fetchone()
+
+    if not par:
+        flash("No se encontró el par de la transferencia", "danger")
+        return redirect('/mov/transferencias')
+
+    if mov['monto'] < 0:
+        origen, destino = mov, par
+    else:
+        origen, destino = par, mov
+
+    nuevo_banco_origen = int(request.form['banco_origen'])
+    nuevo_banco_destino = int(request.form['banco_destino'])
+    nuevo_monto = float(request.form['monto_origen_transferencia'])
+    nueva_fecha = request.form['fecha']
+
+    # Deshacer efecto en saldos anteriores
+    cursor.execute("UPDATE banco SET monto = monto + %s WHERE id=%s AND user_id=%s",
+                   (abs(origen['monto']), origen['banco_id'], session['user_id']))
+    cursor.execute("UPDATE banco SET monto = monto - %s WHERE id=%s AND user_id=%s",
+                   (abs(destino['monto']), destino['banco_id'], session['user_id']))
+
+    # Actualizar ambos movimientos
+    cursor.execute("UPDATE movimientos SET banco_id=%s, monto=%s, fecha=%s WHERE id=%s",
+                   (nuevo_banco_origen, -nuevo_monto, nueva_fecha, origen['id']))
+    cursor.execute("UPDATE movimientos SET banco_id=%s, monto=%s, fecha=%s WHERE id=%s",
+                   (nuevo_banco_destino, nuevo_monto, nueva_fecha, destino['id']))
+
+    # Aplicar nuevos efectos en saldos
+    cursor.execute("UPDATE banco SET monto = monto - %s WHERE id=%s AND user_id=%s",
+                   (nuevo_monto, nuevo_banco_origen, session['user_id']))
+    cursor.execute("UPDATE banco SET monto = monto + %s WHERE id=%s AND user_id=%s",
+                   (nuevo_monto, nuevo_banco_destino, session['user_id']))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    flash("Transferencia actualizada correctamente", "success")
+    return redirect('/mov/transferencias')
 
 
 

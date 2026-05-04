@@ -1,8 +1,8 @@
 document.addEventListener("DOMContentLoaded", function () {
 
-    // =========================
-    // MENÚ HAMBURGUESA
-    // =========================
+// =========================
+// MENÚ HAMBURGUESA
+// =========================
     const toggleBtn = document.querySelector(".menu-toggle");
     const navMenu = document.querySelector(".nav-menu");
 
@@ -12,9 +12,15 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // =========================
-    // VALIDACIÓN FORM (SUBMIT)
-    // =========================
+    // Fecha por defecto: hoy (solo si el campo está vacío)
+    const hoy = new Date().toISOString().split('T')[0];
+    document.querySelectorAll('input[type="date"]').forEach(function (input) {
+        if (!input.value) input.value = hoy;
+    });
+
+// =========================
+// VALIDACIÓN FORM (SUBMIT)
+// =========================
     const forms = document.querySelectorAll("form");
 
     forms.forEach(form => {
@@ -39,9 +45,9 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // =========================
-    // VALIDACIÓN EN TIEMPO REAL
-    // =========================
+// =========================
+// VALIDACIÓN EN TIEMPO REAL
+// =========================
     const inputsRealtime = document.querySelectorAll("input[required], select[required]");
 
     inputsRealtime.forEach(input => {
@@ -55,9 +61,9 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
     });
-    // =========================
-    // BANCO
-    // =========================
+// =========================
+// BANCO
+// =========================
     //Saldo inicial con separador de miles
     const saldoInput = document.getElementById("saldo_inicial");
     if (saldoInput) {
@@ -75,9 +81,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
-    // =========================
-    // MODAL EDITAR CATEGORIA
-    // =========================
+// =========================
+// MODAL EDITAR CATEGORIA
+// =========================
     const modalEditarCategoria = document.getElementById("modalEditarCategoria");
     const formEditarCategoria = document.getElementById("formEditarCategoria");
     const btnEliminarCategoria = document.getElementById("btnEliminarCategoria");
@@ -107,9 +113,19 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // =========================
-    // TRANSFERENCIA 
-    // =========================
+// =========================
+// CREAR MOVIMIENTO 
+// =========================
+//Fecha por defecto: hoy (pero editable).
+    const fechaInput = document.getElementById("fecha_movimiento");
+    if (fechaInput) {
+        const hoy = new Date().toISOString().split('T')[0];
+        if (!fechaInput.value) fechaInput.value = hoy;
+    }
+
+// =========================
+// TRANSFERENCIA 
+// =========================
     function limpiarNumero(valor) {
         return valor.replace(/[\.,]/g, '');
     }
@@ -127,7 +143,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const saldo = parseFloat(limpiarNumero(saldoEl.value || "0")) || 0;
         const monto = parseFloat(limpiarNumero(montoInput.value || "0")) || 0;
 
-        nuevoEl.value = saldo - monto;
+        nuevoEl.value = Math.round(saldo - monto).toLocaleString('es-CL');
     }
 
     function actualizarNuevoSaldoDestino() {
@@ -139,7 +155,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const saldo = parseFloat(limpiarNumero(saldoEl.value || "0")) || 0;
         const monto = parseFloat(limpiarNumero(montoInput.value || "0")) || 0;
 
-        nuevoEl.value = saldo + monto;
+        nuevoEl.value = Math.round(saldo + monto).toLocaleString('es-CL');
     }
 
     if (bancoOrigen) {
@@ -175,9 +191,32 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // =========================
-    // PAGO
-    // =========================
+    // Monto en formulario editar movimiento
+    const montoEditar = document.getElementById('monto_editar');
+    if (montoEditar) {
+        montoEditar.addEventListener('input', function () {
+            let raw = this.value.replace(/[\.,]/g, '');
+            if (!isNaN(raw) && raw !== '') {
+                this.value = Number(raw).toLocaleString('es-CL');
+            }
+        });
+    }
+
+    // Al cargar en modo edición, formatear monto e inicializar saldos
+    if (montoInput && montoInput.value) {
+        const raw = parseFloat(montoInput.value);
+        if (!isNaN(raw)) montoInput.value = Math.round(raw).toLocaleString('es-CL');
+    }
+    if (bancoOrigen && bancoOrigen.value) {
+        bancoOrigen.dispatchEvent(new Event('change'));
+    }
+    if (bancoDestino && bancoDestino.value) {
+        bancoDestino.dispatchEvent(new Event('change'));
+    }
+
+// =========================
+// PAGO
+// =========================
 
     // Formatear opciones del selector de gastos
     var gastoSelect = document.getElementById('gastoSelect');

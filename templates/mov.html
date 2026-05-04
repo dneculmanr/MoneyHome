@@ -93,8 +93,9 @@
 <!--TRANSFERENCIAS-->
 {% if tipo == 'transferencias' %}
 <div class="container mt-4">
-  <form class="row" method="POST" action="/mov/transferencia">
-    
+  <h5 class="mb-3">{% if editar_transferencia %}Editar Transferencia{% else %}Nueva Transferencia{% endif %}</h5>
+  <form class="row" method="POST" action="{{ '/mov/transferencia/editar/' + editar_transferencia.editar_id|string if editar_transferencia else '/mov/transferencia' }}">
+
     <!-- Columna izquierda: Cuenta de origen -->
     <div class="col-md-4 mb-4">
       <div class="card p-3">
@@ -103,16 +104,18 @@
           <label class="form-label">Banco</label>
           <select id="banco_origen" name="banco_origen" class="form-select">
             {% for b in bancos %}
-            <option value="{{ b.id }}" data-saldo="{{ b.saldo_actual or 0 }}">{{ b.nombre }}</option>
+            <option value="{{ b.id }}" data-saldo="{{ b.saldo_actual or 0 }}"
+              {% if editar_transferencia and b.id == editar_transferencia.banco_origen_id %}selected{% endif %}>
+              {{ b.nombre }}
+            </option>
             {% endfor %}
           </select>
         </div>
 
         <div class="mb-3">
             <label class="form-label">Fecha</label>
-            <input type="date" name="fecha" class="form-control">
+            <input type="date" name="fecha" class="form-control" value="{{ editar_transferencia.fecha if editar_transferencia else '' }}">
         </div>
-
 
         <div class="mb-3">
           <label class="form-label">Saldo Actual</label>
@@ -120,7 +123,7 @@
         </div>
 
         <p class="text-muted">Monto de transferencia</p>
-        <input type="text" id="monto_origen_transferencia" name="monto_origen_transferencia" class="form-control mb-2" placeholder="Monto de transferencia">
+        <input type="text" id="monto_origen_transferencia" name="monto_origen_transferencia" class="form-control mb-2" placeholder="Monto de transferencia" value="{{ editar_transferencia.monto if editar_transferencia else '' }}">
 
         <div class="mb-3">
           <label class="form-label">Nuevo saldo</label>
@@ -132,7 +135,7 @@
     <!-- Botón -->
     <div class="col-md-4 mb-4 text-center">
       <button class="btn btn-primary" type="submit" onclick="actualizarNuevoSaldoOrigen();actualizarNuevoSaldoDestino();">
-        Actualizar Saldo
+        {% if editar_transferencia %}Guardar Cambios{% else %}Actualizar Saldo{% endif %}
       </button>
     </div>
 
@@ -144,12 +147,13 @@
           <label class="form-label">Banco</label>
           <select id="banco_destino" name="banco_destino" class="form-select">
             {% for b in bancos %}
-            <option value="{{ b.id }}" data-saldo="{{ b.saldo_actual or 0 }}">{{ b.nombre }}</option>
+            <option value="{{ b.id }}" data-saldo="{{ b.saldo_actual or 0 }}"
+              {% if editar_transferencia and b.id == editar_transferencia.banco_destino_id %}selected{% endif %}>
+              {{ b.nombre }}
+            </option>
             {% endfor %}
           </select>
         </div>
-
-
 
         <div class="mb-3">
           <label class="form-label">Saldo Actual</label>
@@ -213,7 +217,7 @@
 
 
 
-    {% if tipo is none or tipo == 'ingresos' or tipo == 'gastos' %}
+    {% if tipo is none or tipo == 'ingresos' or tipo == 'gastos' or tipo == 'transferencias' %}
 
     
     <div class="card shadow">
