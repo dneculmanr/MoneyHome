@@ -3,21 +3,26 @@ document.addEventListener("DOMContentLoaded", function () {
 // =========================
 // MENÚ HAMBURGUESA
 // =========================
-    const toggleBtn = document.querySelector(".menu-toggle");
-    const navMenu = document.querySelector(".nav-menu");
+const toggleBtn = document.querySelector(".menu-toggle");
+const navMenu = document.querySelector(".nav-menu");
+const overlay = document.querySelector(".overlay");
 
-    if (toggleBtn && navMenu) {
-        toggleBtn.addEventListener("click", function () {
-            navMenu.classList.toggle("active");
-        });
-    }
+if (toggleBtn && navMenu && overlay) {
 
-    // Fecha por defecto: hoy (solo si el campo está vacío)
-    const hoy = new Date().toISOString().split('T')[0];
-    document.querySelectorAll('input[type="date"]').forEach(function (input) {
-        if (!input.value) input.value = hoy;
-    });
+    
+toggleBtn.addEventListener("click", () => {
+    navMenu.classList.toggle("active");
+    overlay.classList.toggle("active");
+    document.body.classList.toggle("menu-open"); // 👈 ESTE
+});
 
+    // cerrar al hacer click fuera
+overlay.addEventListener("click", () => {
+    navMenu.classList.remove("active");
+    overlay.classList.remove("active");
+    document.body.classList.remove("menu-open"); // 👈 ESTE
+});
+}
 // =========================
 // DASHBOARD GRAFICOS
 // =========================
