@@ -8,18 +8,26 @@
         <button class="menu-toggle" id="menu-toggle">☰</button>
 
 
-        <nav class="nav-menu">
-            <a href="/">Home</a>
-            <a href="/perfil">Perfil</a>
-            <a href="/familia">Familia</a>
-            <a href="/categorias">Categorías</a>
-            <a href="/banco">Bancos</a>
-            <a href="/mov">Movimientos</a>
-            <a href="/reportes">Reportes</a>
-            <button class="logout-btn" onclick="location.href='/logout'">Cerrar sesión</button>
-        </nav>
+
+
+
+
+
     </header>
 
+    <nav class="nav-menu">
+    <a href="/">Dashboard</a>
+    <a href="/mov">Movimientos</a>
+    <a href="/bancos">Bancos</a>
+    <a href="/reportes">Reportes</a>
+    <a href="/perfil">Perfil</a>
+
+    <a href="/logout" class="logout-btn">Cerrar sesión</a>
+</nav>
+    <div class="overlay"></div>
+
+
+       
         <div class="user-section">
             <span class="welcome">Bienvenido, {{ session['usuario_nombre'] }}</span>
         </div>
