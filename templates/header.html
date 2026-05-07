@@ -7,12 +7,6 @@
         </div>
         <button class="menu-toggle" id="menu-toggle">☰</button>
 
-
-
-
-
-
-
     </header>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -30,11 +24,18 @@
 
     <nav class="nav-menu">
     <a href="/">Dashboard</a>
-    <a href="/mov">Movimientos</a>
-    <a href="/bancos">Bancos</a>
-    <a href="/reportes">Reportes</a>
     <a href="/perfil">Perfil</a>
+    {% if session.get('rol') == 2 %}
     <a href="/familia">Familia</a>
+    <a href="/bancos">Bancos</a>
+    <a href="/categorias">Categorías</a>
+    {% endif %}
+    <a href="/mov">Movimientos</a>
+    {% if session.get('rol') == 2 %}
+    <a href="/reportes">Reportes</a>
+    {% endif %}
+
+
 
     <a href="/logout" class="logout-btn">Cerrar sesión</a>
 </nav>

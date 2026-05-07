@@ -46,14 +46,20 @@ Visual Studio Code (recomendado)
 1. Crear base de datos
 CREATE DATABASE moneyhome;
 USE moneyhome;
+
+
 2. Crear tablas
 CREATE TABLE usuarios (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100),
-    email VARCHAR(100) UNIQUE,
-    password VARCHAR(255),
-    familia_id INT
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    nombre     VARCHAR(100),
+    email      VARCHAR(100) UNIQUE,
+    password   VARCHAR(255),
+    familia_id INT,
+    rol_id     TINYINT NOT NULL DEFAULT 1,
+    FOREIGN KEY (rol_id)     REFERENCES roles(id),
+    FOREIGN KEY (familia_id) REFERENCES familia(id)
 );
+
 CREATE TABLE familia (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100)
@@ -78,15 +84,12 @@ CREATE TABLE movimientos (
     FOREIGN KEY (categoria_id) REFERENCES categorias(id),
     FOREIGN KEY (tipo_id) REFERENCES tipo_movimiento(id)
 );
-ALTER TABLE usuarios
-ADD CONSTRAINT fk_familia
-FOREIGN KEY (familia_id) REFERENCES familia(id);
+
 🆕 Cambios importantes (NUEVO)
 ALTER TABLE usuarios
 ADD COLUMN reset_token VARCHAR(255),
 ADD COLUMN reset_expira DATETIME;
 
-👉 Necesario para recuperación de contraseña
 
 Bancos
 CREATE TABLE tipo_cuenta ( 
@@ -110,6 +113,13 @@ CREATE TABLE banco (
     FOREIGN KEY (tipo_banco_id) REFERENCES tipo_banco(id),
     FOREIGN KEY (tipo_cuenta_id) REFERENCES tipo_cuenta(id)
 );
+
+CREATE TABLE roles (
+    id          TINYINT PRIMARY KEY,
+    nombre      VARCHAR(20)  UNIQUE NOT NULL,
+    descripcion VARCHAR(100)
+);
+
 ALTER TABLE movimientos
 ADD COLUMN banco_id INT NOT NULL,
 ADD CONSTRAINT fk_mov_banco FOREIGN KEY (banco_id) REFERENCES banco(id);
@@ -189,6 +199,25 @@ INSERT INTO tipo_movimiento (id, nombre) VALUES
 (1, 'ingreso'),
 (2, 'gasto'),
 (3, 'transferencia');
+
+
+-------------Nuevo--------------------------
+CREATE TABLE roles (
+    id          TINYINT PRIMARY KEY,
+    nombre      VARCHAR(20)  UNIQUE NOT NULL,
+    descripcion VARCHAR(100)
+);
+
+INSERT INTO roles VALUES 
+    (1, 'light',        'Interfaz simplificada para usuarios básicos'),
+    (2, 'profesional',  'Acceso completo a todas las funciones');
+
+ALTER TABLE usuarios 
+    ADD COLUMN rol_id TINYINT NOT NULL DEFAULT 1,
+    ADD CONSTRAINT fk_usuario_rol FOREIGN KEY (rol_id) REFERENCES roles(id);
+
+
+
 
 
 🔌 Configuración del Proyecto

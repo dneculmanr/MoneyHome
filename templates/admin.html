@@ -1,0 +1,28 @@
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Admin</title>
+</head>
+<body>
+    <!--Llamar a la vista del menú superior (base_admin)-->
+    {% include 'base_admin.html' %}
+    <!--Si se selecciona la opcion usuarios, se visualiza la vista de usuarios-->
+    {% if option == 'users' %}
+        <h2>Gestión de Usuarios</h2>
+        <p>Aquí puedes crear, editar o eliminar usuarios.</p>
+    {% elif option == 'roles' %}
+        <h2>Gestión de Roles</h2>
+        <p>Aquí puedes crear, editar o eliminar roles.</p>
+    {% elif option == 'help' %}
+        <h2>Autoayuda</h2>
+        <p>Aquí puedes gestionar los recursos de autoayuda.</p>
+    {% elif option == 'settings' %}
+        <h2>Configuración</h2>
+        <p>Aquí puedes configurar las opciones del portal.</p>
+    {% else %}
+        <h2>Bienvenido al Panel de Administración</h2>
+        <p>Seleccione una opción del menú para gestionar el portal.</p>
+    {% endif %}
+    
+</body>
+</html>

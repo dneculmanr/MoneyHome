@@ -11,6 +11,9 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Table as PdfTable, TableStyle as PdfTableStyle, Paragraph, Spacer
+# Importar funcion para requerir rol en rutas específicas
+from functools import wraps
+
 
 app = Flask(__name__)
 app.secret_key = 'secret123'
@@ -43,23 +46,31 @@ def login():
 
         cursor.execute("SELECT * FROM usuarios WHERE email=%s AND password=%s", (email, password))
         user = cursor.fetchone()
-
+        
         if user:
+            
             session['user_id'] = user['id']
             session['nombre'] = user['nombre']
-
-            # LÓGICA DE FLUJO
-            cursor.execute("SELECT COUNT(*) AS total FROM banco WHERE user_id=%s", (user['id'],))
-            resultado = cursor.fetchone()
+            session['rol'] = user['rol_id']
 
             cursor.close()
             conn.close()
 
+            # Rol light va directo al dashboard, sin flujo de configuración de banco
+            if user['rol_id'] == 1:
+                return redirect('/')
+
+            # Rol profesional: validar si ya configuró su banco
+            conn2 = get_db_connection()
+            cursor2 = conn2.cursor(dictionary=True)
+            cursor2.execute("SELECT COUNT(*) AS total FROM banco WHERE user_id=%s", (user['id'],))
+            resultado = cursor2.fetchone()
+            cursor2.close()
+            conn2.close()
+
             if resultado['total'] == 0:
-                # Usuario nuevo → no tiene banco
                 return redirect('/banco')
             else:
-                # Usuario ya configurado
                 return redirect('/')
 
         else:
@@ -67,7 +78,7 @@ def login():
 
     return render_template('login.html')
 
-#RECUPERAR CLAVE
+#---------------RECUPERAR CLAVE--------------------
 
 import uuid
 
@@ -110,7 +121,7 @@ def recuperar():
 
     return render_template('recuperar.html')
 
-# FUNCION PARA ENVIAR MAIL
+#---------------FUNCION PARA ENVIAR MAIL--------------------
 
 def enviar_email(destinatario, asunto, cuerpo):
     remitente = "moneyhomemain@gmail.com"
@@ -154,17 +165,29 @@ def register():
             conn.close()
             return redirect('/register')
 
-        # INSERTAR SI NO EXISTE
+        # Si no existe, insertar nuevo usuario, asignando rol según el checkbox del formulario (profesional o limitado).
+        rol = int(request.form.get('rol', 1))  # 2 si marcó profesional, 1 si no
         cursor.execute("""
-            INSERT INTO usuarios (nombre, email, password)
-            VALUES (%s, %s, %s)
+            INSERT INTO usuarios (nombre, email, password, rol_id)
+            VALUES (%s, %s, %s, %s)
         """, (
             request.form['nombre'],
             email,
-            request.form['password']
+            request.form['password'],
+            rol
         ))
 
         conn.commit()
+        nuevo_id = cursor.lastrowid
+
+        # Rol light: crear banco general automáticamente para no forzar flujo de configuración
+        if rol == 1:
+            cursor.execute("""
+                INSERT INTO banco (user_id, tipo_banco_id, tipo_cuenta_id, nombre_banco, monto)
+                VALUES (%s, 1, 1, 'Banco General', 0)
+            """, (nuevo_id,))
+            conn.commit()
+
         cursor.close()
         conn.close()
 
@@ -180,6 +203,17 @@ def register():
 def logout():
     session.clear()
     return redirect('/login')
+
+# =========================
+# ROLES
+# =========================
+# Modificar rutas para el perfil LIMITADO (rol=1) y PROFESIONAL (rol=2).
+# Modificacion para DASHBOARD: mostrar todo para profesional, mostrar solo movimientos e ingresos, gastos y saldo.
+
+
+
+
+
 
 # =========================
 # DASHBOARD
@@ -199,8 +233,8 @@ def index():
     )
     banco = cursor.fetchone()
 
-    # SI NO TIENE BANCO → FORZAR FLUJO
-    if not banco:
+    # Si el usuario es profesional (rol=2) y no tiene banco configurado, redirigirlo al flujo de configuración de banco.
+    if not banco and session.get('rol') == 2:
         cursor.close()
         conn.close()
         return redirect('/banco')
