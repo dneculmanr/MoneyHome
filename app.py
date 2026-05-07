@@ -57,7 +57,7 @@ def login():
             conn.close()
 
             # Rol light va directo al dashboard, sin flujo de configuración de banco
-            if user['rol_id'] == 1:
+            if user['rol_id'] == 2:
                 return redirect('/')
 
             # Rol profesional: validar si ya configuró su banco
@@ -181,7 +181,7 @@ def register():
         nuevo_id = cursor.lastrowid
 
         # Rol light: crear banco general automáticamente para no forzar flujo de configuración
-        if rol == 1:
+        if rol == 2:
             cursor.execute("""
                 INSERT INTO banco (user_id, tipo_banco_id, tipo_cuenta_id, nombre_banco, monto)
                 VALUES (%s, 1, 1, 'Banco General', 0)
@@ -234,7 +234,7 @@ def index():
     banco = cursor.fetchone()
 
     # Si el usuario es profesional (rol=2) y no tiene banco configurado, redirigirlo al flujo de configuración de banco.
-    if not banco and session.get('rol') == 2:
+    if not banco and session.get('rol') == 3:
         cursor.close()
         conn.close()
         return redirect('/banco')
@@ -299,11 +299,15 @@ def index():
         for r in cursor.fetchall()
     ]
 
-    # =========================
-    # MOVIMIENTOS
-    # =========================
+# =========================
+# MOVIMIENTOS
+# =========================
     cursor.execute("""
-        SELECT m.*, c.nombre AS categoria, t.nombre AS tipo, u.nombre AS usuario
+        SELECT 
+            m.*, 
+            c.nombre AS categoria, 
+            t.nombre AS tipo, 
+            u.nombre AS usuario
         FROM movimientos m
         LEFT JOIN categorias c ON m.categoria_id = c.id
         LEFT JOIN tipo_movimiento t ON m.tipo_id = t.id

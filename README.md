@@ -201,7 +201,8 @@ INSERT INTO tipo_movimiento (id, nombre) VALUES
 (3, 'transferencia');
 
 
--------------Nuevo--------------------------
+------------- Nuevo --------------------------
+-- 1. Crear tabla de roles (3 niveles: admin, light, profesional)
 CREATE TABLE roles (
     id          TINYINT PRIMARY KEY,
     nombre      VARCHAR(20)  UNIQUE NOT NULL,
@@ -209,12 +210,15 @@ CREATE TABLE roles (
 );
 
 INSERT INTO roles VALUES 
-    (1, 'light',        'Interfaz simplificada para usuarios básicos'),
-    (2, 'profesional',  'Acceso completo a todas las funciones');
+    (1, 'admin',        'Administrador del sistema'),
+    (2, 'light',        'Interfaz simplificada para usuarios básicos'),
+    (3, 'profesional',  'Acceso completo a todas las funciones');
 
+-- 2. Agregar columna rol_id a usuarios (default 2 = light)
 ALTER TABLE usuarios 
-    ADD COLUMN rol_id TINYINT NOT NULL DEFAULT 1,
+    ADD COLUMN rol_id TINYINT NOT NULL DEFAULT 2,
     ADD CONSTRAINT fk_usuario_rol FOREIGN KEY (rol_id) REFERENCES roles(id);
+
 
 
 

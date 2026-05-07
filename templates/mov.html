@@ -168,49 +168,6 @@
 {% endif %}
 
 
-    {% if tipo is none or tipo == 'Transferencias'%}
-    <!-- TABLA DE MOVIMIENTOS TRANSFERENCIA -->
-    <div class="card shadow">
-        <div class="card-body">
-
-            {% if banco %}
-            <table class="table table-striped">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Banco</th>
-                        <th>fecha</th>
-                        <th>Monto</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    {% for m in movimientos %}
-                    <tr>
-                        <td>{{ b.nombre }}</td>
-                        <td>{{ b.fecha }}</td>
-                        <td>${{ "{:,.0f}".format(b.monto).replace(",", ".") }}</td>
-
-                        <t>
-                            {% if m.tipo == 'ingreso' %}
-                                <span class="badge bg-success">Ingreso</span>
-                            {% elif m.tipo == 'gasto' %}
-                                <span class="badge bg-danger">Gasto</span>
-                            {% else %}
-                                <span class="badge bg-primary">{{ m.tipo|title }}</span>
-                            {% endif %}
-                            <a href="/banco/editar/{{ b.id }}" class="btn btn-primary btn-sm">Editar</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-
-            </table>
-                {% endif %}
-            {% endif %}
-
-        </div>
-    </div>
-    {% endif %}
 
 
 
@@ -272,10 +229,15 @@
 
             </table>
             {% else %}
+            <p class="text-muted text-center mt-3">
+                Aún no se ha agregado ningún movimiento. Presione <a href="/mov/crear">Aquí</a> para crear uno.
+            </p>
             {% endif %}
 
         </div>
     </div>
+
+    {% endif %}
 
     {% endif %}
 

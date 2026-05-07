@@ -7,9 +7,16 @@
     row-cols-md-5 = 5 columnas por fila en pantallas medianas/grandes.
     g-3 = espacio entre columnas.
     text-center = centra el contenido.-->
-<div class="row row-cols-2 row-cols-md-5 g-3 g-3 text-center" id="movimientos-container">
+<div class="row g-3 text-center justify-content-center {% if session.get('rol') == 3 %}row-cols-2 row-cols-md-5{% else %}row-cols-2 row-cols-md-4{% endif %}" id="movimientos-container">
 
-  <div class="col">
+    <div class="col">
+    <a href="/mov/crear" class="d-block">
+        <img src="/static/Imagenes/crear-Mov.jpg" alt="Crear" class="movimientos-crear">
+        <h2 class="h6 mt-2">Crear</h2>
+    </a>
+    </div>
+
+    <div class="col">
     <a href="/mov/ingresos" class="d-block">
         <img src="/static/Imagenes/Ingreso_Mov.png" alt="Ingresos" class="movimientos-ing">
         <h2 class="h6 mt-2">Ingresos</h2>
@@ -17,34 +24,27 @@
     </div>
 
     <div class="col">
-     <a href="/mov/gastos" class="d-block">
+    <a href="/mov/gastos" class="d-block">
         <img src="/static/Imagenes/gastos-Mov.jpg" alt="Gastos" class="movimientos-gas">
         <h2 class="h6 mt-2">Gastos</h2>
     </a>
     </div>
 
     <div class="col">
-     <a href="/mov/pago" class="d-block">
+    <a href="/mov/pago" class="d-block">
         <img src="/static/Imagenes/pago.png" alt="Pagar" class="movimientos-pago">
         <h2 class="h6 mt-2">Pagar</h2>
     </a>
     </div>
 
+    {% if session.get('rol') == 3 %}
     <div class="col">
-     <a href="/mov/transferencias" class="d-block">
+    <a href="/mov/transferencias" class="d-block">
         <img src="/static/Imagenes/transferencia-Mov.jpg" alt="Transferencia" class="movimientos-trans">
         <h2 class="h6 mt-2">Transferencia</h2>
     </a>
     </div>
+    {% endif %}
 
-    <div class="col">
-     <a href="/mov/crear" class="d-block">
-        <img src="/static/Imagenes/crear-Mov.jpg" alt="Crear" class="movimientos-crear">
-        <h2 class="h6 mt-2">Crear</h2>
-    </a>
-    </div>
-    </a>
-     
-</div>
 </div>
 </div>
