@@ -56,6 +56,10 @@ def login():
             cursor.close()
             conn.close()
 
+            # Rol admin va a panel de administración
+            if user['rol_id'] == 1:
+                return redirect('/admin')
+
             # Rol light va directo al dashboard, sin flujo de configuración de banco
             if user['rol_id'] == 2:
                 return redirect('/')
@@ -204,11 +208,6 @@ def logout():
     session.clear()
     return redirect('/login')
 
-# =========================
-# ROLES
-# =========================
-# Modificar rutas para el perfil LIMITADO (rol=1) y PROFESIONAL (rol=2).
-# Modificacion para DASHBOARD: mostrar todo para profesional, mostrar solo movimientos e ingresos, gastos y saldo.
 
 
 

@@ -219,6 +219,11 @@ ALTER TABLE usuarios
     ADD COLUMN rol_id TINYINT NOT NULL DEFAULT 2,
     ADD CONSTRAINT fk_usuario_rol FOREIGN KEY (rol_id) REFERENCES roles(id);
 
+-- 3. Crear usuario administrador
+INSERT INTO usuarios (nombre, email, password, rol_id)
+VALUES ('Admin', 'admin@gmail.com', 'Admin123', 1);
+
+
 
 
 
