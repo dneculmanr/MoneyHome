@@ -15,12 +15,26 @@
 
     </header>
 
+    {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="container mt-3">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
     <nav class="nav-menu">
     <a href="/">Dashboard</a>
     <a href="/mov">Movimientos</a>
     <a href="/bancos">Bancos</a>
     <a href="/reportes">Reportes</a>
     <a href="/perfil">Perfil</a>
+    <a href="/familia">Familia</a>
 
     <a href="/logout" class="logout-btn">Cerrar sesión</a>
 </nav>
