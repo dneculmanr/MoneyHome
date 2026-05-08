@@ -153,47 +153,5 @@ min-vh-100: establece la altura mínima al 100% de la ventana gráfica -->
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-setTimeout(() => {
-    const alert = document.querySelector('.alert');
-    if (alert) alert.remove();
-}, 3000);
-
-const _d = JSON.parse(document.getElementById('dashboard-data').textContent);
-const mensual = _d.mensual.reverse();
-const colores = ['#0d6efd','#dc3545','#fd7e14','#6f42c1','#20c997','#ffc107','#0dcaf0','#198754'];
-
-new Chart(document.getElementById('graficoDona'), {
-    type: 'doughnut',
-    data: {
-        labels: _d.categorias.map(c => c.categoria),
-        datasets: [{
-            data: _d.categorias.map(c => c.total),
-            backgroundColor: colores,
-            borderWidth: 0
-        }]
-    },
-    options: {
-        maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } }
-    }
-});
-
-new Chart(document.getElementById('graficoBarras'), {
-    type: 'bar',
-    data: {
-        labels: mensual.map(m => m.mes),
-        datasets: [
-            { label: 'Ingresos', data: mensual.map(m => m.ingresos), backgroundColor: '#198754' },
-            { label: 'Gastos',   data: mensual.map(m => m.gastos),   backgroundColor: '#dc3545' }
-        ]
-    },
-    options: {
-        maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
-        scales: { y: { beginAtZero: true, ticks: { font: { size: 11 } } } }
-    }
-});
-</script>
 </body>
 </html>

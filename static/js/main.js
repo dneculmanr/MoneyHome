@@ -106,10 +106,96 @@ overlay.addEventListener("click", () => {
 
 
 // =========================
+// AUTOAYUDA USUARIO
+// =========================
+    if (document.querySelector('.btn-filtro')) {
+        document.querySelectorAll('.btn-filtro').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('.btn-filtro').forEach(b => b.classList.remove('active', 'btn-dark'));
+                this.classList.add('active', 'btn-dark');
+                const tipo = this.dataset.tipo;
+                document.querySelectorAll('.recurso-card').forEach(card => {
+                    card.style.display = (tipo === 'todos' || card.dataset.tipo === tipo) ? 'block' : 'none';
+                });
+            });
+        });
+    }
+
+    if (document.getElementById('verRecursoModal')) {
+        document.getElementById('verRecursoModal').addEventListener('show.bs.modal', function (e) {
+            const btn       = e.relatedTarget;
+            const tipo      = btn.dataset.tipo;
+            const titulo    = btn.dataset.titulo;
+            const contenido = btn.dataset.contenido || '';
+            const url       = btn.dataset.url || '';
+
+            document.getElementById('modal_titulo').textContent = titulo;
+
+            let cuerpo = '';
+            if (tipo === 'texto') {
+                cuerpo = `<p>${contenido.replace(/\n/g, '<br>')}</p>`;
+            } else if (tipo === 'pdf') {
+                cuerpo = `<iframe src="${url}" width="100%" height="500px" style="border:none;"></iframe>`;
+            } else if (tipo === 'video') {
+                const embedUrl = url.replace('watch?v=', 'embed/').replace('youtu.be/', 'www.youtube.com/embed/');
+                cuerpo = `<div class="ratio ratio-16x9"><iframe src="${embedUrl}" allowfullscreen></iframe></div>`;
+            }
+            document.getElementById('modal_cuerpo').innerHTML = cuerpo;
+        });
+
+        document.getElementById('verRecursoModal').addEventListener('hidden.bs.modal', function () {
+            document.getElementById('modal_cuerpo').innerHTML = '';
+        });
+    }
+
+
+
+
+// =========================
 // DASHBOARD GRAFICOS
 // =========================
-//Grafico de torta para gastos por categoria
+    setTimeout(() => {
+        const alert = document.querySelector('.alert');
+        if (alert) alert.remove();
+    }, 3000);
 
+    if (document.getElementById('dashboard-data')) {
+        const _d = JSON.parse(document.getElementById('dashboard-data').textContent);
+        const mensual = _d.mensual.reverse();
+        const colores = ['#0d6efd','#dc3545','#fd7e14','#6f42c1','#20c997','#ffc107','#0dcaf0','#198754'];
+
+        if (document.getElementById('graficoDona')) {
+            new Chart(document.getElementById('graficoDona'), {
+                type: 'doughnut',
+                data: {
+                    labels: _d.categorias.map(c => c.categoria),
+                    datasets: [{ data: _d.categorias.map(c => c.total), backgroundColor: colores, borderWidth: 0 }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } }
+                }
+            });
+        }
+
+        if (document.getElementById('graficoBarras')) {
+            new Chart(document.getElementById('graficoBarras'), {
+                type: 'bar',
+                data: {
+                    labels: mensual.map(m => m.mes),
+                    datasets: [
+                        { label: 'Ingresos', data: mensual.map(m => m.ingresos), backgroundColor: '#198754' },
+                        { label: 'Gastos',   data: mensual.map(m => m.gastos),   backgroundColor: '#dc3545' }
+                    ]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
+                    scales: { y: { beginAtZero: true, ticks: { font: { size: 11 } } } }
+                }
+            });
+        }
+    }
 
 // =========================
 // VALIDACIÓN FORM (SUBMIT)

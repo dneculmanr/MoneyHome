@@ -120,49 +120,6 @@
 {% include 'footer.html' %}
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    // Filtro por tipo
-    document.querySelectorAll('.btn-filtro').forEach(btn => {
-        btn.addEventListener('click', function () {
-            document.querySelectorAll('.btn-filtro').forEach(b => b.classList.remove('active', 'btn-dark'));
-            this.classList.add('active', 'btn-dark');
-
-            const tipo = this.dataset.tipo;
-            document.querySelectorAll('.recurso-card').forEach(card => {
-                card.style.display = (tipo === 'todos' || card.dataset.tipo === tipo) ? 'block' : 'none';
-            });
-        });
-    });
-
-    // Modal ver recurso
-    document.getElementById('verRecursoModal').addEventListener('show.bs.modal', function (e) {
-        const btn = e.relatedTarget;
-        const tipo     = btn.dataset.tipo;
-        const titulo   = btn.dataset.titulo;
-        const contenido = btn.dataset.contenido || '';
-        const url      = btn.dataset.url || '';
-
-        document.getElementById('modal_titulo').textContent = titulo;
-
-        let cuerpo = '';
-        if (tipo === 'texto') {
-            cuerpo = `<p>${contenido.replace(/\n/g, '<br>')}</p>`;
-        } else if (tipo === 'pdf') {
-            cuerpo = `<iframe src="${url}" width="100%" height="500px" style="border:none;"></iframe>`;
-        } else if (tipo === 'video') {
-            // Soporta YouTube embed
-            const embedUrl = url.replace('watch?v=', 'embed/').replace('youtu.be/', 'www.youtube.com/embed/');
-            cuerpo = `<div class="ratio ratio-16x9">
-                        <iframe src="${embedUrl}" allowfullscreen></iframe>
-                      </div>`;
-        }
-        document.getElementById('modal_cuerpo').innerHTML = cuerpo;
-    });
-
-    // Limpiar modal al cerrar (detener video/pdf)
-    document.getElementById('verRecursoModal').addEventListener('hidden.bs.modal', function () {
-        document.getElementById('modal_cuerpo').innerHTML = '';
-    });
-</script>
+<script src="/static/js/main.js"></script>
 </body>
 </html>
