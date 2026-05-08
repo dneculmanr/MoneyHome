@@ -18,7 +18,7 @@
         <h2>Tickets de Soporte</h2>
         <!--Boton de crear Tickets-->
         <a href="/admin/tickets/crear" class="btn btn-primary mb-3">Crear Ticket</a>
-        
+
         <!--Tabla de Tickets-->
         <table class="table table-striped mt-3">
             <thead>
@@ -29,21 +29,90 @@
                     <th>Estado</th>
                     <th>Fecha de Creación</th>
                     <th>Usuario asignado</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 {% for ticket in tickets %}
-                <tr>
+                <tr {% if not ticket.leido_admin %}class="fw-bold"{% endif %}>
                     <td>{{ ticket.id }}</td>
-                    <td>{{ ticket.usuario.nombre }}</td>
+                    <td>{{ ticket.nombre_usuario }}</td>
                     <td>{{ ticket.asunto }}</td>
-                    <td>{{ ticket.estado }}</td>
-                    <td>{{ ticket.fecha_creacion.strftime('%Y-%m-%d %H:%M') }}</td>
-                    <td>{{ ticket.usuario_asignado.nombre if ticket.usuario_asignado else 'No asignado' }}</td>
+                    <td>
+                        {% if ticket.estado == 'abierto' %}
+                            <span class="badge bg-success">Abierto</span>
+                        {% elif ticket.estado == 'en_curso' %}
+                            <span class="badge bg-warning text-dark">En curso</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Cerrado</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ ticket.fecha.strftime('%d-%m-%Y %H:%M') if ticket.fecha else '-' }}</td>
+                    <td>{{ ticket.nombre_asignado or 'Sin asignar' }}</td>
+                    <td class="d-flex gap-1">
+                        <a href="/admin/tickets/{{ ticket.id }}" class="btn btn-sm btn-warning">Ver / Responder</a>
+
+                        <!-- Form eliminar individual -->
+                        <form method="POST" action="/admin/tickets/{{ ticket.id }}/eliminar"
+                            onsubmit="return confirm('¿Eliminar este ticket?')">
+                            <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                        </form>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+
+<!-- Modal responder ticket-->
+<div class="modal fade" id="responderTicketModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Responder Ticket</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3 p-3 bg-light rounded border">
+                    <small class="text-muted">Usuario: <strong id="modal_usuario"></strong></small>
+                    <h6 class="mt-1 mb-1" id="modal_asunto"></h6>
+                    <p class="mb-0 small" id="modal_descripcion"></p>
+                </div>
+                <form id="responderTicketForm" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Estado</label>
+                        <select class="form-select" name="estado">
+                            <option value="en_curso">En curso</option>
+                            <option value="cerrado">Cerrado</option>
+                            <option value="abierto">Abierto</option>
+                        </select>
+                    </div>
+                    <!--Usuario asignado, con la opcion de cambiarlo (solo usuarios rol 1)-->
+                    <div class="mb-3">
+                        <label class="form-label">Asignar a</label>
+                        <select class="form-select" name="asignado_a">
+                            <option value="">Sin asignar</option>
+                            {% for admin in admins %}
+                                <option value="{{ admin.id }}">{{ admin.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Tu respuesta</label>
+                        <textarea class="form-control" name="respuesta" rows="4" placeholder="Escribe tu respuesta..." required></textarea>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Enviar respuesta</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

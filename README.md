@@ -241,6 +241,30 @@ CREATE TABLE login_log (
     FOREIGN KEY (user_id) REFERENCES usuarios(id)
 );
 
+CREATE TABLE tickets (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    user_id     INT NOT NULL,
+    asignado_a  INT DEFAULT NULL,
+    asunto      VARCHAR(150) NOT NULL,
+    descripcion TEXT,
+    estado      ENUM('abierto', 'en_curso', 'cerrado') DEFAULT 'abierto',
+    fecha       DATETIME DEFAULT NOW(),
+    leido       TINYINT DEFAULT 0,
+    leido_admin	TINYINT DEFAULT 1,
+    FOREIGN KEY (user_id)    REFERENCES usuarios(id),
+    FOREIGN KEY (asignado_a) REFERENCES usuarios(id)
+);
+
+CREATE TABLE ticket_mensajes (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    ticket_id  INT NOT NULL,
+    user_id    INT NOT NULL,
+    mensaje    TEXT NOT NULL,
+    fecha      DATETIME DEFAULT NOW(),
+    FOREIGN KEY (ticket_id) REFERENCES tickets(id),
+    FOREIGN KEY (user_id)   REFERENCES usuarios(id)
+);
+
 
 
 

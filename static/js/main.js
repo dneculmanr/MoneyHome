@@ -106,6 +106,55 @@ overlay.addEventListener("click", () => {
 
 
 // =========================
+// TICKET DETALLE
+// =========================
+    const hilo = document.getElementById('hilo-conversacion');
+    if (hilo) hilo.scrollTop = hilo.scrollHeight;
+
+// =========================
+// TICKETS
+// =========================
+    if (document.getElementById('responderTicketModal')) {
+        document.getElementById('responderTicketModal').addEventListener('show.bs.modal', function (e) {
+            const btn  = e.relatedTarget;
+            const id   = btn.dataset.id;
+            const form = document.getElementById('responderTicketForm');
+
+            form.action = window.location.pathname.startsWith('/admin')
+                ? '/admin/tickets/' + id + '/responder'
+                : '/tickets/' + id + '/responder';
+
+            // Admin: poblar datos del ticket
+            if (document.getElementById('modal_usuario')) {
+                document.getElementById('modal_usuario').textContent     = btn.dataset.usuario || '';
+                document.getElementById('modal_asunto').textContent      = btn.dataset.asunto || '';
+                document.getElementById('modal_descripcion').textContent = btn.dataset.descripcion || '';
+            }
+
+            // Usuario: mostrar respuesta del admin si existe
+            const respuestaDiv   = document.getElementById('respuesta_admin_div');
+            const respuestaTexto = document.getElementById('respuesta_admin_texto');
+            if (respuestaDiv && respuestaTexto) {
+                const respuesta = btn.dataset.respuesta || '';
+                if (respuesta) {
+                    respuestaTexto.textContent = respuesta;
+                    respuestaDiv.style.display = 'block';
+
+                    // Marcar como leído si aún no lo estaba
+                    if (btn.dataset.leido === '0') {
+                        fetch('/tickets/' + id + '/leer', { method: 'POST' });
+                        // Quitar negrita de la fila inmediatamente
+                        btn.closest('tr').classList.remove('fw-bold');
+                        btn.dataset.leido = '1';
+                    }
+                } else {
+                    respuestaDiv.style.display = 'none';
+                }
+            }
+        });
+    }
+
+// =========================
 // AUTOAYUDA USUARIO
 // =========================
     if (document.querySelector('.btn-filtro')) {

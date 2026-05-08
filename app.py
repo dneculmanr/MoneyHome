@@ -17,6 +17,7 @@ from functools import wraps
 
 app = Flask(__name__)
 app.secret_key = 'secret123'
+app.jinja_env.globals['now'] = datetime.now
 
 # =========================
 # CONEXIÓN BD
@@ -236,7 +237,11 @@ def admin():
         manuales_por_tipo=manuales_por_tipo
     )
 
-
+#-------------------CERRAR SECION-----------------
+@app.route('/admin/cerrar-sesion')
+def admin_cerrar_sesion():
+    session.clear()
+    return redirect('/login')
 
 #-------------------USUARIOS----------------------
 
@@ -545,13 +550,94 @@ def admin_tickets():
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    # Obtener lista de tickets registrados en la base de datos.
-    cursor.execute("SELECT * FROM tickets")
+    cursor.execute("""
+        SELECT t.*, u.nombre AS nombre_usuario,
+               a.nombre AS nombre_asignado
+        FROM tickets t
+        JOIN usuarios u ON t.user_id = u.id
+        LEFT JOIN usuarios a ON t.asignado_a = a.id
+        ORDER BY t.leido_admin ASC, t.fecha DESC
+    """)
     tickets = cursor.fetchall()
+
+    cursor.execute("SELECT id, nombre FROM usuarios WHERE rol_id = 1")
+    admins = cursor.fetchall()
+
     cursor.close()
     conn.close()
 
-    return render_template('admin_tickets.html', tickets=tickets)
+    return render_template('admin_tickets.html', tickets=tickets, admins=admins)
+
+# ENDPOINT PARA EDITAR TICKET desde la vista de admin/tickets.
+@app.route('/admin/tickets/editar', methods=['POST'])
+def admin_tickets_editar():
+    if 'user_id' not in session:
+        return redirect('/login')
+    if session.get('rol') != 1:
+        flash("Acceso denegado: solo administradores", "danger")
+        return redirect('/')
+
+    ticket_id = request.form['ticket_id']
+    estado = request.form['estado']
+    respuesta = request.form['respuesta']
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE tickets
+        SET estado=%s, respuesta=%s
+        WHERE id=%s
+    """, (estado, respuesta, ticket_id))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    flash("Ticket actualizado correctamente", "success")
+    return redirect('/admin/tickets')
+
+@app.route('/admin/tickets/<int:id>/responder', methods=['POST'])
+def admin_tickets_responder(id):
+    if 'user_id' not in session:
+        return redirect('/login')
+    if session.get('rol') != 1:
+        flash("Acceso denegado: solo administradores", "danger")
+        return redirect('/')
+
+    respuesta   = request.form.get('respuesta', '')
+    estado      = request.form.get('estado', 'en_curso')
+    asignado_a  = request.form.get('asignado_a') or None
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE tickets SET respuesta=%s, estado=%s, asignado_a=%s WHERE id=%s
+    """, (respuesta, estado, asignado_a, id))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    flash("Respuesta enviada correctamente", "success")
+    return redirect('/admin/tickets')
+
+@app.route('/admin/tickets/<int:id>/eliminar', methods=['POST'])
+def admin_tickets_eliminar(id):
+    if 'user_id' not in session:
+        return redirect('/login')
+    if session.get('rol') != 1:
+        flash("Acceso denegado: solo administradores", "danger")
+        return redirect('/')
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM tickets WHERE id=%s", (id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    flash("Ticket eliminado correctamente", "success")
+    return redirect('/admin/tickets')
 
 
 
@@ -610,6 +696,187 @@ def register():
     return render_template('register.html')
 
 # =========================
+# TICKETS USUARIO
+# =========================
+@app.route('/tickets', methods=['GET', 'POST'])
+def tickets():
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    if request.method == 'POST':
+        asunto      = request.form['asunto']
+        descripcion = request.form.get('descripcion', '')
+        cursor.execute("""
+            INSERT INTO tickets (user_id, asunto, descripcion)
+            VALUES (%s, %s, %s)
+        """, (session['user_id'], asunto, descripcion))
+        conn.commit()
+        flash("Ticket creado correctamente", "success")
+        return redirect('/tickets')
+
+    cursor.execute("""
+        SELECT t.*, u.nombre AS nombre_usuario,
+               a.nombre AS nombre_asignado,
+               (SELECT COUNT(*) FROM ticket_mensajes m
+                JOIN usuarios u2 ON m.user_id = u2.id
+                WHERE m.ticket_id = t.id AND u2.rol_id = 1) AS tiene_respuesta_admin
+        FROM tickets t
+        JOIN usuarios u ON t.user_id = u.id
+        LEFT JOIN usuarios a ON t.asignado_a = a.id
+        WHERE t.user_id = %s
+        ORDER BY t.fecha DESC
+    """, (session['user_id'],))
+    tickets = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    return render_template('tickets.html', tickets=tickets)
+
+# ENDPOINT PARA RESPONDER TICKET DESDE LA VISTA DE tickets.
+@app.route('/tickets/<int:id>/responder', methods=['POST'])
+def tickets_responder(id):
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    respuesta = request.form['mensaje']
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE tickets
+        SET respuesta=%s, estado='en_curso'
+        WHERE id=%s AND user_id=%s
+    """, (respuesta, id, session['user_id']))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    flash("Respuesta enviada correctamente", "success")
+    return redirect('/tickets')
+
+@app.route('/tickets/<int:id>')
+def ticket_detalle(id):
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT t.*, u.nombre AS nombre_usuario
+        FROM tickets t JOIN usuarios u ON t.user_id = u.id
+        WHERE t.id = %s AND t.user_id = %s
+    """, (id, session['user_id']))
+    ticket = cursor.fetchone()
+
+    if not ticket:
+        cursor.close()
+        conn.close()
+        return redirect('/tickets')
+
+    cursor.execute("""
+        SELECT m.*, u.nombre AS nombre_remitente
+        FROM ticket_mensajes m
+        JOIN usuarios u ON m.user_id = u.id
+        WHERE m.ticket_id = %s
+        ORDER BY m.fecha ASC
+    """, (id,))
+    mensajes = cursor.fetchall()
+
+    # Marcar como leído
+    cursor.execute("UPDATE tickets SET leido=1 WHERE id=%s", (id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return render_template('ticket_detalle.html', ticket=ticket, mensajes=mensajes)
+
+@app.route('/admin/tickets/<int:id>')
+def admin_ticket_detalle(id):
+    if 'user_id' not in session:
+        return redirect('/login')
+    if session.get('rol') != 1:
+        return redirect('/')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT t.*, u.nombre AS nombre_usuario, a.nombre AS nombre_asignado
+        FROM tickets t
+        JOIN usuarios u ON t.user_id = u.id
+        LEFT JOIN usuarios a ON t.asignado_a = a.id
+        WHERE t.id = %s
+    """, (id,))
+    ticket = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT m.*, u.nombre AS nombre_remitente
+        FROM ticket_mensajes m
+        JOIN usuarios u ON m.user_id = u.id
+        WHERE m.ticket_id = %s
+        ORDER BY m.fecha ASC
+    """, (id,))
+    mensajes = cursor.fetchall()
+
+    cursor.execute("SELECT id, nombre FROM usuarios WHERE rol_id = 1")
+    admins = cursor.fetchall()
+
+    cursor.execute("UPDATE tickets SET leido_admin=1 WHERE id=%s", (id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return render_template('ticket_detalle.html', ticket=ticket, mensajes=mensajes, admins=admins)
+
+@app.route('/tickets/<int:id>/mensaje', methods=['POST'])
+def ticket_mensaje(id):
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    mensaje = request.form.get('mensaje', '').strip()
+    if mensaje:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO ticket_mensajes (ticket_id, user_id, mensaje)
+            VALUES (%s, %s, %s)
+        """, (id, session['user_id'], mensaje))
+        if session.get('rol') == 1:
+            # Admin responde: marcar leido=0 para notificar al usuario, leido_admin=1
+            asignado = request.form.get('asignado_a') or None
+            estado   = request.form.get('estado', 'en_curso')
+            cursor.execute("""
+                UPDATE tickets SET estado=%s, asignado_a=%s, leido=0, leido_admin=1 WHERE id=%s
+            """, (estado, asignado, id))
+        else:
+            # Usuario responde: marcar leido_admin=0 para notificar al admin
+            cursor.execute("UPDATE tickets SET leido_admin=0 WHERE id=%s", (id,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+    if session.get('rol') == 1:
+        return redirect(f'/admin/tickets/{id}')
+    return redirect(f'/tickets/{id}')
+
+@app.route('/tickets/<int:id>/leer', methods=['POST'])
+def tickets_leer(id):
+    if 'user_id' not in session:
+        return '', 401
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE tickets SET leido=1 WHERE id=%s AND user_id=%s", (id, session['user_id']))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return '', 204
+
 # =========================
 # AUTOAYUDA USUARIO
 # =========================
