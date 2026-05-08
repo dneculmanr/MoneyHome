@@ -21,6 +21,51 @@ min-vh-100: establece la altura mínima al 100% de la ventana gráfica -->
 <body class="bg-light d-flex flex-column min-vh-100">
 
     {% include 'header.html' %}
+    {% include 'flash_messages.html' %}
+
+
+
+
+
+{% if tutorial_light %}
+
+<div class="alert alert-primary mt-3 mx-3">
+
+{% if session['rol'] == 2 %}
+
+👋 Bienvenido a MoneyHome Light.
+
+Desde este panel podrás:
+
+• visualizar tu saldo general  
+• registrar movimientos  
+• editar tu perfil  
+• acceder a soporte  
+• consultar manuales de ayuda  
+
+{% else %}
+
+👋 Bienvenido a MoneyHome Profesional.
+
+Desde este panel podrás administrar:
+
+• bancos  
+• categorías  
+• movimientos financieros  
+• grupos familiares  
+• reportes  
+• soporte y manuales  
+
+{% endif %}
+
+</div>
+
+{% endif %}
+
+</div>
+
+
+
     
     
 <!-- flex-grow-1: hace que el elemento principal crezca para ocupar el espacio disponible entre el header y el footer -->

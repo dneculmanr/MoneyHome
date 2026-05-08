@@ -16,6 +16,19 @@
 
 {% include 'header.html' %}
 
+{% include 'flash_messages.html' %}
+
+{% if tutorial_perfil %}
+
+<div class="alert alert-info mt-3 mx-3">
+
+    👤 Aquí puedes modificar tus datos personales,
+    correo y contraseña.
+
+</div>
+
+{% endif %}
+
 <main class="container mt-4 flex-grow-1">
 
     <a href="/" class="btn btn-secondary mb-3">← Volver</a>

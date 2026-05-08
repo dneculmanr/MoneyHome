@@ -21,6 +21,18 @@
 
 {% include 'header.html' %}
 {% include 'basemov.html' %}
+{% include 'flash_messages.html' %}
+
+{% if tutorial_mov %}
+
+<div class="alert alert-warning mt-3 mx-3">
+
+    💸 Aquí puedes registrar ingresos y gastos
+    para llevar control de tus finanzas.
+
+</div>
+
+{% endif %}
 
 <main class="flex-grow-1 container mt-4">
 

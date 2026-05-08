@@ -16,6 +16,18 @@
 <body class="bg-light d-flex flex-column min-vh-100">
 
 {% include 'header.html' %}
+{% include 'flash_messages.html' %}
+
+{% if session['rol'] == 3 %}
+
+<div class="alert alert-primary mt-3 mx-3">
+
+👨‍👩‍👧‍👦 Aquí podrás administrar grupos familiares
+y compartir información financiera.
+
+</div>
+
+{% endif %}
 
 <main class="container mt-4 flex-grow-1">
 
