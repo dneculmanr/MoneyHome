@@ -1,43 +1,24 @@
-import smtplib
-from email.mime.text import MIMEText
-from flask import Flask, render_template, request, redirect, session, send_file, flash
-from openpyxl import Workbook
-from openpyxl.worksheet.table import Table, TableStyleInfo
-from openpyxl.styles import Font
-from io import BytesIO
-import mysql.connector
-from datetime import datetime
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Table as PdfTable, TableStyle as PdfTableStyle, Paragraph, Spacer
-# Importar funcion para requerir rol en rutas específicas
-from functools import wraps
+import smtplib # para enviar mails de recuperación de contraseña.
+from email.mime.text import MIMEText # para generar el cuerpo del mail en formato texto plano
+from flask import Flask, render_template, request, redirect, session, send_file, flash # para manejo de rutas, sesiones, formularios, redirecciones, archivos y mensajes flash
+from openpyxl import Workbook # para generar archivos Excel
+from openpyxl.worksheet.table import Table, TableStyleInfo # para generar tablas con estilos en Excel
+from openpyxl.styles import Font # para estilos de texto en Excel
+from io import BytesIO # para generar archivos en memoria sin necesidad de guardarlos en disco
+import mysql.connector # para conexión a base de datos MySQL.
+from datetime import datetime # para mostrar fecha actual en el dashboard y para validar expiración de token de recuperación de contraseña
+from reportlab.lib import colors #para colores en PDF
+from reportlab.lib.pagesizes import A4 #para tamaño de página en PDF
+from reportlab.lib.styles import getSampleStyleSheet #para estilos de texto en PDF
+from reportlab.platypus import SimpleDocTemplate, Table as PdfTable, TableStyle as PdfTableStyle, Paragraph, Spacer #para generar PDF
+import uuid # para generar token único de recuperación de contraseña
 
 
+# CONFIGURACIÓN INICIAL DE FLASK
 app = Flask(__name__)
 app.secret_key = 'secret123'
 app.jinja_env.globals['now'] = datetime.now
 
-@app.context_processor
-def inject_tickets_no_leidos():
-    count = 0
-    if 'user_id' in session:
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor(dictionary=True)
-            cursor.execute("""
-                SELECT COUNT(*) AS total FROM tickets t
-                JOIN ticket_mensajes m ON m.ticket_id = t.id
-                JOIN usuarios u ON m.user_id = u.id
-                WHERE t.user_id = %s AND t.leido = 0 AND u.rol_id = 1
-            """, (session['user_id'],))
-            count = cursor.fetchone()['total']
-            cursor.close()
-            conn.close()
-        except:
-            pass
-    return {'tickets_no_leidos': count}
 
 # =========================
 # CONEXIÓN BD
@@ -50,8 +31,10 @@ def get_db_connection():
         database="moneyhome"
     )
 
-def formatear_miles(valor):
-    return f"{float(valor):,.0f}".replace(",", ".")
+
+
+
+
 
 # =========================
 # LOGIN
@@ -111,8 +94,6 @@ def login():
 
 
 #---------------RECUPERAR CLAVE--------------------
-
-import uuid
 
 @app.route('/recuperar', methods=['GET', 'POST'])
 def recuperar():
@@ -174,6 +155,61 @@ def enviar_email(destinatario, asunto, cuerpo):
         print("❌ ERROR SMTP:")
         print(e)
         raise e
+
+
+# =========================
+# REGISTER
+# =========================
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        email = request.form['email']
+
+        # VALIDAR SI YA EXISTE
+        cursor.execute("SELECT id FROM usuarios WHERE email=%s", (email,))
+        existente = cursor.fetchone()
+
+        if existente:
+            flash("Este correo ya está registrado", "danger")
+            cursor.close()
+            conn.close()
+            return redirect('/register')
+
+        # Si no existe, insertar nuevo usuario 2 (limitado) por defecto, a menos que marque que es profesional.
+        rol = int(request.form.get('rol', 2))  # 3 si marcó profesional, 2 (limitado) si no
+        cursor.execute("""
+            INSERT INTO usuarios (nombre, email, password, rol_id)
+            VALUES (%s, %s, %s, %s)
+        """, (
+            request.form['nombre'],
+            email,
+            request.form['password'],
+            rol
+        ))
+
+        conn.commit()
+        nuevo_id = cursor.lastrowid
+
+        # Rol light: crear banco general automáticamente para no forzar flujo de configuración
+        if rol == 2:
+            cursor.execute("""
+                INSERT INTO banco (user_id, tipo_banco_id, tipo_cuenta_id, nombre_banco, monto)
+                VALUES (%s, 1, 1, 'Banco General', 0)
+            """, (nuevo_id,))
+            conn.commit()
+
+        cursor.close()
+        conn.close()
+
+        flash("Cuenta creada correctamente", "success")
+        return redirect('/login')
+
+    return render_template('register.html')
+
+
 
 
 # =========================
@@ -682,61 +718,45 @@ def admin_tickets_eliminar(id):
 
 
 
-# =========================
-# REGISTER
-# =========================
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
 
-        email = request.form['email']
 
-        # VALIDAR SI YA EXISTE
-        cursor.execute("SELECT id FROM usuarios WHERE email=%s", (email,))
-        existente = cursor.fetchone()
 
-        if existente:
-            flash("Este correo ya está registrado", "danger")
-            cursor.close()
-            conn.close()
-            return redirect('/register')
 
-        # Si no existe, insertar nuevo usuario 2 (limitado) por defecto, a menos que marque que es profesional.
-        rol = int(request.form.get('rol', 2))  # 3 si marcó profesional, 2 (limitado) si no
-        cursor.execute("""
-            INSERT INTO usuarios (nombre, email, password, rol_id)
-            VALUES (%s, %s, %s, %s)
-        """, (
-            request.form['nombre'],
-            email,
-            request.form['password'],
-            rol
-        ))
 
-        conn.commit()
-        nuevo_id = cursor.lastrowid
 
-        # Rol light: crear banco general automáticamente para no forzar flujo de configuración
-        if rol == 2:
-            cursor.execute("""
-                INSERT INTO banco (user_id, tipo_banco_id, tipo_cuenta_id, nombre_banco, monto)
-                VALUES (%s, 1, 1, 'Banco General', 0)
-            """, (nuevo_id,))
-            conn.commit()
 
-        cursor.close()
-        conn.close()
-
-        flash("Cuenta creada correctamente", "success")
-        return redirect('/login')
-
-    return render_template('register.html')
 
 # =========================
 # TICKETS USUARIO
 # =========================
+
+# Contador de tickets no leídos para las notificaciones del menu SOPORTE.
+@app.context_processor
+def inject_tickets_no_leidos():
+    count = 0
+    if 'user_id' in session:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            # Contar tickets no leídos del usuario que tengan mensajes de admin sin leer
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) AS total 
+                FROM tickets t
+                JOIN ticket_mensajes m ON m.ticket_id = t.id
+                JOIN usuarios u ON m.user_id = u.id
+                WHERE t.user_id = %s AND t.leido = 0 AND u.rol_id = 1
+            """, (session['user_id'],))
+            count = cursor.fetchone()['total']
+            cursor.close()
+            conn.close()
+        except:
+            pass
+    return {'tickets_no_leidos': count}
+
+
+
+# ENDPOINT PARA MOSTRAR VISTA DE tickets.
 @app.route('/tickets', methods=['GET', 'POST'])
 def tickets():
     if 'user_id' not in session:
@@ -755,7 +775,7 @@ def tickets():
         conn.commit()
         flash("Ticket creado correctamente", "success")
         return redirect('/tickets')
-
+    # Obtener lista de tickets del usuario, si tiene respuesta de admin sin leer.
     cursor.execute("""
         SELECT t.*, u.nombre AS nombre_usuario,
                a.nombre AS nombre_asignado,
@@ -2028,7 +2048,7 @@ def perfil():
         """,(request.form['nombre'],request.form['email'],request.form['password'],session['user_id']))
 
         conn.commit()
-        session['usuario_nombre'] = request.form['nombre']
+        session['nombre'] = request.form['nombre']
         flash("Perfil actualizado correctamente", "success")
 
         return redirect('/')
@@ -2042,7 +2062,9 @@ def perfil():
 # REPORTES
 # =========================
 
-#Endpoint genericos para reportes.
+# Función para formatear números con separador de miles y sin decimales. 
+def formatear_miles(valor):
+    return f"{float(valor):,.0f}".replace(",", ".")
 
 # vista principal de reportes, con links a cada reporte específico.
 @app.route("/reportes")
@@ -2114,7 +2136,7 @@ def reporte_utilidad_excel():
     ws.append(["","", "Reporte de Utilidad Mensual"])
     ws.cell(row=ws.max_row, column=3).font = Font(size=16, bold=True)
     ws.append([])
-    ws.append(["","Usuario:", session.get("usuario_nombre", "Desconocido"),"","Generado el:", datetime.now().strftime("%d-%m-%Y %H:%M")]) # Fecha de generación del reporte
+    ws.append(["","Usuario:", session.get("nombre", "Desconocido"),"","Generado el:", datetime.now().strftime("%d-%m-%Y %H:%M")]) # Fecha de generación del reporte
     ws.append(["", "N°", "Mes", "Gastos", "Ingresos", "Utilidad"])
     header_row = ws.max_row
 
@@ -2201,7 +2223,7 @@ def reporte_utilidad_pdf():
     styles = getSampleStyleSheet()
     elementos = [
         Paragraph("Reporte de Utilidad Mensual", styles["Title"]),
-        Paragraph(f"Usuario: {session.get('usuario_nombre', 'Desconocido')}", styles["Normal"]),
+        Paragraph(f"Usuario: {session.get('nombre', 'Desconocido')}", styles["Normal"]),
         Paragraph(f"Generado el: {datetime.now().strftime('%d-%m-%Y %H:%M')}", styles["Normal"]),
         Spacer(1, 12),
     ]
@@ -2314,7 +2336,7 @@ def reporte_gastos_mensuales_excel():
     ws.append(["","", "Reporte de Gastos Mensuales"])
     ws.cell(row=ws.max_row, column=3).font = Font(size=16, bold=True)
     ws.append([])
-    ws.append(["","Usuario:", session.get("usuario_nombre", "Desconocido"),"","Generado el:", datetime.now().strftime("%d-%m-%Y %H:%M")]) # Fecha de generación del reporte
+    ws.append(["","Usuario:", session.get("nombre", "Desconocido"),"","Generado el:", datetime.now().strftime("%d-%m-%Y %H:%M")]) # Fecha de generación del reporte
     ws.append(["", "N°", "Mes", "Nombre", "Categoria", "Familia", "Monto"])
     header_row = ws.max_row
 
@@ -2399,7 +2421,7 @@ def reporte_gastos_mensuales_pdf():
     styles = getSampleStyleSheet()
     elementos = [
         Paragraph("Reporte de Gastos Mensuales", styles["Title"]),
-        Paragraph(f"Usuario: {session.get('usuario_nombre', 'Desconocido')}", styles["Normal"]),
+        Paragraph(f"Usuario: {session.get('nombre', 'Desconocido')}", styles["Normal"]),
         Paragraph(f"Generado el: {datetime.now().strftime('%d-%m-%Y %H:%M')}", styles["Normal"]),
         Spacer(1, 12),
     ]
@@ -2501,7 +2523,7 @@ def reporte_ingresos_mensuales_excel():
     ws.append(["","", "Reporte de Ingresos Mensuales"])
     ws.cell(row=ws.max_row, column=3).font = Font(size=16, bold=True)
     ws.append([])
-    ws.append(["","Usuario:", session.get("usuario_nombre", "Desconocido"),"","Generado el:", datetime.now().strftime("%d-%m-%Y %H:%M")]) # Fecha de generación del reporte
+    ws.append(["","Usuario:", session.get("nombre", "Desconocido"),"","Generado el:", datetime.now().strftime("%d-%m-%Y %H:%M")]) # Fecha de generación del reporte
     ws.append(["", "N°", "Mes", "Nombre", "Categoria", "Familia", "Monto"])
     header_row = ws.max_row
 
@@ -2585,7 +2607,7 @@ def reporte_ingresos_mensuales_pdf():
     styles = getSampleStyleSheet()
     elementos = [
         Paragraph("Reporte de Ingresos Mensuales", styles["Title"]),
-        Paragraph(f"Usuario: {session.get('usuario_nombre', 'Desconocido')}", styles["Normal"]),
+        Paragraph(f"Usuario: {session.get('nombre', 'Desconocido')}", styles["Normal"]),
         Paragraph(f"Generado el: {datetime.now().strftime('%d-%m-%Y %H:%M')}", styles["Normal"]),
         Spacer(1, 12),
     ]
