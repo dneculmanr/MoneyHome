@@ -23,14 +23,25 @@
     </div>
   {% endif %}
 {% endwith %}
-
+<!-- Volver a poner la limitante por rol -->
     <nav class="nav-menu">
-    <a href="/">Dashboard</a>
-    <a href="/mov">Movimientos</a>
-    <a href="/bancos">Bancos</a>
-    <a href="/reportes">Reportes</a>
+    <a href="/">Home</a>
     <a href="/perfil">Perfil</a>
+    {% if session['rol'] == 3 %}
+    <a href="/bancos">Bancos</a>
+    {% endif %}
+    {% if session['rol'] == 3 %}
+    <a href="/categorias">Categorías</a>
+    {% endif %}
+    {% if session['rol'] == 3 %}
     <a href="/familia">Familia</a>
+    {% endif %}
+    <a href="/mov">Movimientos</a>
+    {% if session['rol'] == 3 %}
+    <a href="/reportes">Reportes</a>
+    {% endif %}
+    <a href="/tickets">Soporte</a>
+    <a href="/manuales">manuales</a>
 
     <a href="/logout" class="logout-btn">Cerrar sesión</a>
 </nav>
@@ -39,6 +50,6 @@
 
        
         <div class="user-section">
-            <span class="welcome">Bienvenido, {{ session['usuario_nombre'] }}</span>
+            <span class="welcome">Bienvenido, {{ session['nombre'] }}</span>
         </div>
     </div>

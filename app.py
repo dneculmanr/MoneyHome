@@ -373,7 +373,26 @@ def admin_usuarios_eliminar(id):
         # 3. Eliminar bancos del usuario
         cursor.execute("DELETE FROM banco WHERE user_id = %s", (id,))
 
-        # 4. Eliminar el usuario
+        # 4. Eliminar todos los mensajes de los tickets que pertenecen al usuario
+        cursor.execute("""
+            DELETE tm FROM ticket_mensajes tm
+            JOIN tickets t ON tm.ticket_id = t.id
+            WHERE t.user_id = %s
+        """, (id,))
+
+        # 5. Eliminar mensajes enviados por el usuario en tickets de otros
+        cursor.execute("DELETE FROM ticket_mensajes WHERE user_id = %s", (id,))
+
+        # 6. Desasignar tickets donde el usuario era responsable
+        cursor.execute("UPDATE tickets SET asignado_a = NULL WHERE asignado_a = %s", (id,))
+
+        # 7. Eliminar tickets del usuario
+        cursor.execute("DELETE FROM tickets WHERE user_id = %s", (id,))
+
+        # 7. Eliminar historial de logins
+        cursor.execute("DELETE FROM login_log WHERE user_id = %s", (id,))
+
+        # 8. Eliminar el usuario
         cursor.execute("DELETE FROM usuarios WHERE id = %s", (id,))
 
         conn.commit()
@@ -684,8 +703,8 @@ def register():
             conn.close()
             return redirect('/register')
 
-        # Si no existe, insertar nuevo usuario, asignando rol según el checkbox del formulario (profesional o limitado).
-        rol = int(request.form.get('rol', 1))  # 2 si marcó profesional, 1 si no
+        # Si no existe, insertar nuevo usuario 2 (limitado) por defecto, a menos que marque que es profesional.
+        rol = int(request.form.get('rol', 2))  # 3 si marcó profesional, 2 (limitado) si no
         cursor.execute("""
             INSERT INTO usuarios (nombre, email, password, rol_id)
             VALUES (%s, %s, %s, %s)
