@@ -223,6 +223,16 @@ ALTER TABLE usuarios
 INSERT INTO usuarios (nombre, email, password, rol_id)
 VALUES ('Admin', 'admin@gmail.com', 'Admin123', 1);
 
+CREATE TABLE autoayuda (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    titulo      VARCHAR(150) NOT NULL,
+    contenido   TEXT,
+    tipo        ENUM('texto', 'video') DEFAULT 'texto',
+    url         VARCHAR(500),
+    modulo      VARCHAR(100) DEFAULT NULL,
+    rol_id      TINYINT DEFAULT NULL,
+    FOREIGN KEY (rol_id) REFERENCES roles(id)
+);
 
 
 

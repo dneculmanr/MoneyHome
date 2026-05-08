@@ -23,6 +23,88 @@ overlay.addEventListener("click", () => {
     document.body.classList.remove("menu-open"); // 👈 ESTE
 });
 }
+
+// =========================
+// PORTAL ADMIN
+// =========================
+//--------------usuarios----------------
+    if (document.getElementById('editarUsuarioModal')) {
+        document.getElementById('editarUsuarioModal').addEventListener('show.bs.modal', function (e) {
+            const btn = e.relatedTarget;
+            document.getElementById('edit_user_id').value = btn.dataset.id;
+            document.getElementById('edit_nombre').value   = btn.dataset.nombre;
+            document.getElementById('edit_email').value    = btn.dataset.email;
+            document.getElementById('edit_rol_id').value   = btn.dataset.rol;
+        });
+    }
+
+    if (document.getElementById('eliminarUsuarioModal')) {
+        document.getElementById('eliminarUsuarioModal').addEventListener('show.bs.modal', function (e) {
+            const btn = e.relatedTarget;
+            document.getElementById('eliminar_nombre').textContent = btn.dataset.nombre;
+            document.getElementById('eliminarForm').action = '/admin/usuarios/' + btn.dataset.id + '/eliminar';
+        });
+    }
+
+//--------------roles----------------
+    if (document.getElementById('verRolModal')) {
+        document.getElementById('verRolModal').addEventListener('show.bs.modal', function (e) {
+            const btn = e.relatedTarget;
+            document.getElementById('ver_id').textContent          = btn.dataset.id;
+            document.getElementById('ver_nombre').textContent      = btn.dataset.nombre;
+            document.getElementById('ver_descripcion').textContent = btn.dataset.descripcion;
+        });
+    }
+
+//--------------AUTOAYUDA----------------
+
+    function actualizarCamposCrear(tipo) {
+        document.getElementById('crear_adjunto_div').style.display = (tipo === 'pdf' || tipo === 'word') ? 'block' : 'none';
+        document.getElementById('crear_url_div').style.display     = tipo === 'video' ? 'block' : 'none';
+        const accept = tipo === 'pdf' ? '.pdf' : (tipo === 'word' ? '.doc,.docx' : '');
+        document.getElementById('crear_adjunto_input').accept = accept;
+    }
+
+    function actualizarCamposEditar(tipo) {
+        document.getElementById('edit_adjunto_div').style.display = (tipo === 'pdf' || tipo === 'word') ? 'block' : 'none';
+        document.getElementById('edit_url_div').style.display     = tipo === 'video' ? 'block' : 'none';
+        const accept = tipo === 'pdf' ? '.pdf' : (tipo === 'word' ? '.doc,.docx' : '');
+        document.getElementById('edit_adjunto_input').accept = accept;
+    }
+
+    if (document.getElementById('crear_tipo')) {
+        document.getElementById('crear_tipo').addEventListener('change', function () {
+            actualizarCamposCrear(this.value);
+        });
+    }
+
+    if (document.getElementById('editarRecursoModal')) {
+        document.getElementById('editarRecursoModal').addEventListener('show.bs.modal', function (e) {
+            const btn = e.relatedTarget;
+            document.getElementById('edit_id').value        = btn.dataset.id;
+            document.getElementById('edit_titulo').value    = btn.dataset.titulo;
+            document.getElementById('edit_contenido').value = btn.dataset.contenido;
+            document.getElementById('edit_tipo').value      = btn.dataset.tipo;
+            document.getElementById('edit_url').value       = btn.dataset.url;
+            document.getElementById('edit_modulo').value    = btn.dataset.modulo;
+            document.getElementById('edit_rol_id').value    = btn.dataset.rol;
+            document.getElementById('edit_adjunto_actual').textContent = btn.dataset.url ? 'Actual: ' + btn.dataset.url : '';
+            actualizarCamposEditar(btn.dataset.tipo);
+        });
+        document.getElementById('edit_tipo').addEventListener('change', function () {
+            actualizarCamposEditar(this.value);
+        });
+    }
+
+    if (document.getElementById('eliminarRecursoModal')) {
+        document.getElementById('eliminarRecursoModal').addEventListener('show.bs.modal', function (e) {
+            const btn = e.relatedTarget;
+            document.getElementById('eliminar_titulo').textContent = btn.dataset.titulo;
+            document.getElementById('eliminarRecursoForm').action = '/admin/autoayuda/' + btn.dataset.id + '/eliminar';
+        });
+    }
+
+
 // =========================
 // DASHBOARD GRAFICOS
 // =========================

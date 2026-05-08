@@ -82,6 +82,8 @@ def login():
 
     return render_template('login.html')
 
+
+
 #---------------RECUPERAR CLAVE--------------------
 
 import uuid
@@ -146,7 +148,325 @@ def enviar_email(destinatario, asunto, cuerpo):
         print("❌ ERROR SMTP:")
         print(e)
         raise e
-        
+
+
+# =========================
+# ADMIN
+# =========================
+# ENDPOINT PARA MOSTRAR VISTA DE admin.
+@app.route('/admin')
+def admin():
+    if 'user_id' not in session:
+        return redirect('/login')
+    if session.get('rol') != 1:
+        flash("Acceso denegado: solo administradores", "danger")
+        return redirect('/')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM usuarios")
+    usuarios = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    return render_template('admin.html', usuarios=usuarios)
+
+#-------------------USUARIOS----------------------
+
+# ENDPOINT PARA MOSTRAR VISTA de admin/usuarios.
+@app.route('/admin/usuarios')
+def admin_usuarios():
+    if 'user_id' not in session:
+        return redirect('/login')
+    if session.get('rol') != 1:
+        flash("Acceso denegado: solo administradores", "danger")
+        return redirect('/')
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    # Obtener lista de usuarios registrados en la base de datos.
+    cursor.execute("SELECT * FROM usuarios")
+    usuarios = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    return render_template('admin_usuarios.html', usuarios=usuarios)
+
+# ENDPOINT PARA CREAR USUARIOS desde la vista de admin/usuarios.
+@app.route('/admin/usuarios/crear', methods=['POST'])
+def admin_usuarios_crear():
+    if 'user_id' not in session:
+        return redirect('/login')
+    if session.get('rol') != 1:
+        flash("Acceso denegado: solo administradores", "danger")
+        return redirect('/')
+
+    nombre = request.form['nombre']
+    email = request.form['email']
+    password = request.form['password']
+    rol_id = int(request.form['rol_id'])
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO usuarios (nombre, email, password, rol_id)
+        VALUES (%s, %s, %s, %s)
+    """, (nombre, email, password, rol_id))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    flash("Usuario creado correctamente", "success")
+    return redirect('/admin/usuarios')
+
+# ENDPOINT PARA EDITAR USUARIOS desde la vista de admin/usuarios.
+@app.route('/admin/usuarios/editar', methods=['POST'])
+def admin_usuarios_editar():
+    if 'user_id' not in session:
+        return redirect('/login')
+    if session.get('rol') != 1:
+        flash("Acceso denegado: solo administradores", "danger")
+        return redirect('/')
+
+    user_id = request.form['user_id']
+    nombre = request.form['nombre']
+    email = request.form['email']
+    password = request.form['password']
+    rol_id = int(request.form['rol_id'])
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE usuarios
+        SET nombre=%s, email=%s, password=%s, rol_id=%s
+        WHERE id=%s
+    """, (nombre, email, password, rol_id, user_id))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    flash("Usuario editado correctamente", "success")
+    return redirect('/admin/usuarios')
+
+#ENDPOINT PARA ELIMINAR USUARIOS desde la vista de admin/usuarios.
+@app.route('/admin/usuarios/<int:id>/eliminar', methods=['POST'])
+def admin_usuarios_eliminar(id):
+    if 'user_id' not in session:
+        return redirect('/login')
+    if session.get('rol') != 1:
+        flash("Acceso denegado: solo administradores", "danger")
+        return redirect('/')
+
+    if id == session.get('user_id'):
+        flash("No puedes eliminar tu propio usuario", "danger")
+        return redirect('/admin/usuarios')
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 1. Eliminar historial_pagos de los movimientos del usuario
+        cursor.execute("""
+            DELETE hp FROM historial_pagos hp
+            JOIN movimientos m ON hp.id_movimiento = m.id
+            WHERE m.user_id = %s
+        """, (id,))
+
+        # 2. Eliminar movimientos del usuario
+        cursor.execute("DELETE FROM movimientos WHERE user_id = %s", (id,))
+
+        # 3. Eliminar bancos del usuario
+        cursor.execute("DELETE FROM banco WHERE user_id = %s", (id,))
+
+        # 4. Eliminar el usuario
+        cursor.execute("DELETE FROM usuarios WHERE id = %s", (id,))
+
+        conn.commit()
+        flash("Usuario eliminado correctamente", "success")
+    except Exception as e:
+        conn.rollback()
+        flash(f"No se pudo eliminar el usuario: {e}", "danger")
+
+    cursor.close()
+    conn.close()
+
+    return redirect('/admin/usuarios')
+
+
+
+#-------------------ROLES----------------------
+# ENDPOINT PARA MOSTRAR VISTA DE admin/roles.
+@app.route('/admin/roles')
+def admin_roles():
+    if 'user_id' not in session:
+        return redirect('/login')
+    if session.get('rol') != 1:
+        flash("Acceso denegado: solo administradores", "danger")
+        return redirect('/')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    # Obtener lista de roles registrados en la base de datos.
+    cursor.execute("SELECT * FROM roles")
+    roles = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    return render_template('admin_roles.html', roles=roles)
+
+# ENSPOINT PARA VER ROL DESDE LA VISTA DE admin/roles.
+@app.route('/admin/roles/ver', methods=['POST'])
+def admin_roles_ver():
+    if 'user_id' not in session:
+        return redirect('/login')
+    if session.get('rol') != 1:
+        flash("Acceso denegado: solo administradores", "danger")
+        return redirect('/')
+
+    rol_id = request.form['rol_id']
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM roles WHERE id=%s", (rol_id,))
+    rol = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    if not rol:
+        flash("Rol no encontrado", "danger")
+        return redirect('/admin/roles')
+
+#-------------------AUTOAYUDA----------------------
+# ENDPOINT PARA MOSTRAR VISTA DE admin/autoayuda.
+@app.route('/admin/autoayuda')
+def admin_autoayuda():
+    if 'user_id' not in session:
+        return redirect('/login')
+    if session.get('rol') != 1:
+        flash("Acceso denegado: solo administradores", "danger")
+        return redirect('/')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    # Obtener lista de recursos de autoayuda registrados en la base de datos.
+    cursor.execute("SELECT * FROM autoayuda")
+    autoayuda = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    return render_template('admin_autoayuda.html', autoayuda=autoayuda)
+
+import os
+from werkzeug.utils import secure_filename
+
+UPLOAD_FOLDER = os.path.join('static', 'uploads')
+ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def guardar_adjunto(file):
+    if file and file.filename and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(UPLOAD_FOLDER, filename))
+        return f'/static/uploads/{filename}'
+    return None
+
+# ENDPOINT PARA CREAR RECURSO DE AUTOAYUDA.
+@app.route('/admin/autoayuda/crear', methods=['POST'])
+def admin_autoayuda_crear():
+    if 'user_id' not in session:
+        return redirect('/login')
+    if session.get('rol') != 1:
+        flash("Acceso denegado: solo administradores", "danger")
+        return redirect('/')
+
+    titulo    = request.form['titulo']
+    contenido = request.form.get('contenido', '')
+    tipo      = request.form['tipo']
+    modulo    = request.form.get('modulo', '')
+    rol_id    = request.form.get('rol_id') or None
+    adjunto   = guardar_adjunto(request.files.get('adjunto'))
+    url       = adjunto if adjunto else request.form.get('url', '')
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO autoayuda (titulo, contenido, tipo, url, modulo, rol_id)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (titulo, contenido, tipo, url, modulo, rol_id))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    flash("Recurso creado correctamente", "success")
+    return redirect('/admin/autoayuda')
+
+# ENDPOINT PARA EDITAR RECURSO DE AUTOAYUDA.
+@app.route('/admin/autoayuda/editar', methods=['POST'])
+def admin_autoayuda_editar():
+    if 'user_id' not in session:
+        return redirect('/login')
+    if session.get('rol') != 1:
+        flash("Acceso denegado: solo administradores", "danger")
+        return redirect('/')
+
+    id        = request.form['id']
+    titulo    = request.form['titulo']
+    contenido = request.form.get('contenido', '')
+    tipo      = request.form['tipo']
+    modulo    = request.form.get('modulo', '')
+    rol_id    = request.form.get('rol_id') or None
+    adjunto   = guardar_adjunto(request.files.get('adjunto'))
+    url       = adjunto if adjunto else request.form.get('url', '')
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE autoayuda
+        SET titulo=%s, contenido=%s, tipo=%s, url=%s, modulo=%s, rol_id=%s
+        WHERE id=%s
+    """, (titulo, contenido, tipo, url, modulo, rol_id, id))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    flash("Recurso actualizado correctamente", "success")
+    return redirect('/admin/autoayuda')
+
+# ENDPOINT PARA ELIMINAR RECURSO DE AUTOAYUDA.
+@app.route('/admin/autoayuda/<int:id>/eliminar', methods=['POST'])
+def admin_autoayuda_eliminar(id):
+    if 'user_id' not in session:
+        return redirect('/login')
+    if session.get('rol') != 1:
+        flash("Acceso denegado: solo administradores", "danger")
+        return redirect('/')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT url FROM autoayuda WHERE id=%s", (id,))
+    recurso = cursor.fetchone()
+    if recurso and recurso['url'] and recurso['url'].startswith('/static/uploads/'):
+        ruta = recurso['url'].lstrip('/')
+        if os.path.exists(ruta):
+            os.remove(ruta)
+
+    cursor.execute("DELETE FROM autoayuda WHERE id=%s", (id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    flash("Recurso eliminado correctamente", "success")
+    return redirect('/admin/autoayuda')
+
+
 
 # =========================
 # REGISTER
@@ -201,16 +521,34 @@ def register():
     return render_template('register.html')
 
 # =========================
+# =========================
+# AUTOAYUDA USUARIO
+# =========================
+@app.route('/autoayuda')
+def autoayuda():
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT * FROM autoayuda
+        WHERE rol_id IS NULL OR rol_id = %s
+        ORDER BY tipo, titulo
+    """, (session.get('rol'),))
+    recursos = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    return render_template('autoayuda.html', recursos=recursos)
+
+# =========================
 # LOGOUT
 # =========================
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect('/login')
-
-
-
-
 
 
 
