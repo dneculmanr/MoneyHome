@@ -32,64 +32,106 @@ def get_db_connection():
     )
 
 
-
-
-
-
 # =========================
 # LOGIN
 # =========================
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+
     if request.method == 'POST':
+
         email = request.form['email']
         password = request.form['password']
 
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
 
-        cursor.execute("SELECT * FROM usuarios WHERE email=%s AND password=%s", (email, password))
+        cursor.execute(
+            "SELECT * FROM usuarios WHERE email=%s AND password=%s",
+            (email, password)
+        )
+
         user = cursor.fetchone()
-        
+
+        # =========================
+        # LOGIN CORRECTO
+        # =========================
         if user:
-            
+
             session['user_id'] = user['id']
             session['nombre'] = user['nombre']
             session['rol'] = user['rol_id']
 
             # Registrar login
-            cursor.execute("INSERT INTO login_log (user_id) VALUES (%s)", (user['id'],))
-            conn.commit()
+            cursor.execute(
+                "INSERT INTO login_log (user_id) VALUES (%s)",
+                (user['id'],)
+            )
 
+            conn.commit()
 
             cursor.close()
             conn.close()
 
-            # Rol admin va a panel de administración
+            # =========================
+            # ADMIN
+            # =========================
             if user['rol_id'] == 1:
                 return redirect('/admin')
 
-            # Rol light va directo al dashboard, sin flujo de configuración de banco
-            if user['rol_id'] == 2:
+            # =========================
+            # LIGHT
+            # =========================
+            elif user['rol_id'] == 2:
+
+                session['tutorial_light'] = True
+
                 return redirect('/')
 
-            # Rol profesional: validar si ya configuró su banco
-            conn2 = get_db_connection()
-            cursor2 = conn2.cursor(dictionary=True)
-            cursor2.execute("SELECT COUNT(*) AS total FROM banco WHERE user_id=%s", (user['id'],))
-            resultado = cursor2.fetchone()
-            cursor2.close()
-            conn2.close()
+            # =========================
+            # PROFESIONAL
+            # =========================
+            elif user['rol_id'] == 3:
 
-            if resultado['total'] == 0:
-                return redirect('/banco')
-            else:
-                return redirect('/')
+                conn2 = get_db_connection()
+                cursor2 = conn2.cursor(dictionary=True)
 
+                cursor2.execute(
+                    "SELECT COUNT(*) AS total FROM banco WHERE user_id=%s",
+                    (user['id'],)
+                )
+
+                resultado = cursor2.fetchone()
+
+                cursor2.close()
+                conn2.close()
+
+                # Usuario profesional sin banco
+                if resultado['total'] == 0:
+
+                    session['nuevo_usuario'] = True
+
+                    return redirect('/banco')
+
+                # Usuario profesional con banco
+                else:
+
+                    session['tutorial_pro'] = True
+
+                    return redirect('/')
+
+        # =========================
+        # LOGIN INCORRECTO
+        # =========================
         else:
+
             flash("Credenciales incorrectas", "danger")
 
     return render_template('login.html')
+
+
+
+
 
 
 
@@ -506,6 +548,8 @@ def admin_autoayuda():
     cursor.close()
     conn.close()
 
+
+
     return render_template('admin_autoayuda.html', autoayuda=autoayuda)
 
 import os
@@ -641,7 +685,13 @@ def admin_tickets():
     cursor.close()
     conn.close()
 
-    return render_template('admin_tickets.html', tickets=tickets, admins=admins)
+    tutorial_soporte = False
+
+    if session.get('rol') in [2, 3]:
+        tutorial_soporte = True
+        session.pop('tutorial_mov', None)
+
+    return render_template('admin_tickets.html', tickets=tickets, admins=admins,)
 
 # ENDPOINT PARA EDITAR TICKET desde la vista de admin/tickets.
 @app.route('/admin/tickets/editar', methods=['POST'])
@@ -792,7 +842,18 @@ def tickets():
     cursor.close()
     conn.close()
 
-    return render_template('tickets.html', tickets=tickets)
+    tutorial_soporte = False
+
+    if session.get('rol') in [2, 3]:
+        tutorial_soporte = True
+        session.pop('tutorial_mov', None)
+
+
+    return render_template(
+    'tickets.html',
+    tickets=tickets,
+    tutorial_soporte=tutorial_soporte
+)
 
 # ENDPOINT PARA RESPONDER TICKET DESDE LA VISTA DE tickets.
 @app.route('/tickets/<int:id>/responder', methods=['POST'])
@@ -955,7 +1016,17 @@ def autoayuda():
     cursor.close()
     conn.close()
 
-    return render_template('autoayuda.html', recursos=recursos)
+    tutorial_manuales = False
+
+    if session.get('rol') in [2, 3]:
+        tutorial_manuales = True
+        session.pop('tutorial_mov', None)
+
+    return render_template(
+    'autoayuda.html',
+    recursos=recursos,
+    tutorial_manuales=tutorial_manuales
+)
 
 # =========================
 # LOGOUT
@@ -1075,16 +1146,24 @@ def index():
 
     cursor.close()
     conn.close()
+    
+    tutorial_light = False
 
-    return render_template('index.html',
+    if session.get('tutorial_light'):
+        tutorial_light = True
+        session.pop('tutorial_light', None)
+
+
+    return render_template(
+        'index.html',
         ingresos=ingresos,
         gastos=gastos,
         saldo=saldo,
         movimientos=movimientos,
         grafico_mensual=grafico_mensual,
-        gastos_categoria=gastos_categoria
+        gastos_categoria=gastos_categoria,
+        tutorial_light=tutorial_light
     )
-
 # =========================
 # MOVIMIENTOS (CON FAMILIA)
 # =========================
@@ -1130,8 +1209,8 @@ def mov(tipo=None):
     cursor.execute("SELECT * FROM categorias")
     categorias = cursor.fetchall()
 
+    
     cursor.execute(
-cursor.execute(
     """
     SELECT b.id,
            b.nombre_banco AS nombre,
@@ -1153,7 +1232,7 @@ cursor.execute(
     """,
     (session['user_id'],)
 )
-    )
+    
     bancos = cursor.fetchall()
 
 
@@ -1227,6 +1306,13 @@ cursor.execute(
     cursor.close()
     conn.close()
 
+    tutorial_mov = False
+
+    if session.get('rol') in [2, 3]:
+        tutorial_mov = True
+        session.pop('tutorial_mov', None)
+
+
     return render_template(
         'mov.html',
         movimientos=movimientos,
@@ -1234,7 +1320,8 @@ cursor.execute(
         bancos=bancos,
         tipo=tipo,
         ingresos_transferencia=ingresos_transferencia,
-        editar_transferencia=editar_transferencia
+        editar_transferencia=editar_transferencia,
+        tutorial_mov=tutorial_mov
     )
 
 # =========================
@@ -1786,6 +1873,8 @@ def unirse_familia():
     cursor.close()
     conn.close()
 
+
+
     flash("Te uniste a la familia", "success")
     return redirect('/familia')
 
@@ -1927,12 +2016,21 @@ def bancos():
     cursor.close()
     conn.close()
 
+    tutorial_bancos = False
+
+    if session.get('nuevo_usuario'):
+        tutorial_bancos = True
+
+    cursor.close()
+    conn.close()
+
     return render_template(
-        'banco.html',
-        bancos=bancos,
-        tipos_banco=tipos_banco,
-        tipos_cuenta=tipos_cuenta
-    )
+    'banco.html',
+    bancos=bancos,
+    tipos_banco=tipos_banco,
+    tipos_cuenta=tipos_cuenta,
+    tutorial_bancos=tutorial_bancos
+)
 
 
 
@@ -1982,6 +2080,15 @@ def crear_banco():
     conn.commit()
     cursor.close()
     conn.close()
+
+    if session.get('nuevo_usuario'):
+        session.pop('nuevo_usuario', None)
+
+        if session.get('rol') == 2:
+            session['tutorial_light'] = True
+
+        elif session.get('rol') == 3:
+            session['tutorial_pro'] = True
 
     flash("Banco creado correctamente", "success")
     return redirect('/')
@@ -2056,7 +2163,18 @@ def perfil():
     cursor.execute("SELECT * FROM usuarios WHERE id=%s",(session['user_id'],))
     usuario = cursor.fetchone()
 
-    return render_template('perfil.html', usuario=usuario)
+
+    tutorial_perfil = False
+
+    if session.get('rol') in [2, 3]:
+        tutorial_perfil = True
+        session.pop('tutorial_mov', None)
+
+    return render_template(
+    'perfil.html',
+    usuario=usuario,
+    tutorial_perfil=tutorial_perfil
+)
 
 # =========================
 # REPORTES
