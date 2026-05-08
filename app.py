@@ -53,6 +53,11 @@ def login():
             session['nombre'] = user['nombre']
             session['rol'] = user['rol_id']
 
+            # Registrar login
+            cursor.execute("INSERT INTO login_log (user_id) VALUES (%s)", (user['id'],))
+            conn.commit()
+
+
             cursor.close()
             conn.close()
 
@@ -164,12 +169,74 @@ def admin():
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
+
+#RESUMEN PARA EL DASHBOARD ADMIN
+
     cursor.execute("SELECT * FROM usuarios")
     usuarios = cursor.fetchall()
+
+    cursor.execute("SELECT * FROM autoayuda")
+    manuales = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT * FROM login_log
+        WHERE fecha >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+    """)
+    logins_ultimo_mes = cursor.fetchall()
+
+#-------------------DASHBOARD ADMIN----------------------
+
+#GRAFICOS PARA DASHBOARD ADMIN
+
+    # Usuarios por rol para gráfico
+    cursor.execute("""
+        SELECT r.nombre, COUNT(u.id) AS total
+        FROM roles r
+        LEFT JOIN usuarios u ON u.rol_id = r.id
+        WHERE r.id IN (1, 2, 3)
+        GROUP BY r.id, r.nombre
+    """)
+    usuarios_por_rol = cursor.fetchall()
+
+    # Bancos más utilizados
+    cursor.execute("""
+        SELECT tb.nombre, COUNT(b.id) AS total
+        FROM banco b
+        JOIN tipo_banco tb ON b.tipo_banco_id = tb.id
+        GROUP BY tb.nombre
+        ORDER BY total DESC
+        LIMIT 6
+    """)
+    bancos_uso = cursor.fetchall()
+
+    # Manuales por tipo (incluye tipos sin registros con total 0)
+    cursor.execute("""
+        SELECT t.tipo, COUNT(a.id) AS total
+        FROM (
+            SELECT 'texto' AS tipo UNION ALL
+            SELECT 'pdf'           UNION ALL
+            SELECT 'word'          UNION ALL
+            SELECT 'video'
+        ) t
+        LEFT JOIN autoayuda a ON a.tipo = t.tipo
+        GROUP BY t.tipo
+    """)
+    manuales_por_tipo = cursor.fetchall()
+
     cursor.close()
     conn.close()
 
-    return render_template('admin.html', usuarios=usuarios)
+    return render_template('admin.html',
+        usuarios=usuarios,
+        manuales=manuales,
+        logins_ultimo_mes=logins_ultimo_mes,
+        tickets_en_curso=[],
+        usuarios_por_rol=usuarios_por_rol,
+        bancos_uso=bancos_uso,
+        manuales_por_tipo=manuales_por_tipo
+    )
+
+
 
 #-------------------USUARIOS----------------------
 
@@ -465,6 +532,28 @@ def admin_autoayuda_eliminar(id):
 
     flash("Recurso eliminado correctamente", "success")
     return redirect('/admin/autoayuda')
+
+#-------------------TICKETS----------------------
+# ENDPOINT PARA MOSTRAR VISTA DE admin/tickets.
+@app.route('/admin/tickets')
+def admin_tickets():
+    if 'user_id' not in session:
+        return redirect('/login')
+    if session.get('rol') != 1:
+        flash("Acceso denegado: solo administradores", "danger")
+        return redirect('/')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    # Obtener lista de tickets registrados en la base de datos.
+    cursor.execute("SELECT * FROM tickets")
+    tickets = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    return render_template('admin_tickets.html', tickets=tickets)
+
+
 
 
 

@@ -227,12 +227,20 @@ CREATE TABLE autoayuda (
     id          INT AUTO_INCREMENT PRIMARY KEY,
     titulo      VARCHAR(150) NOT NULL,
     contenido   TEXT,
-    tipo        ENUM('texto', 'video') DEFAULT 'texto',
+    tipo        VARCHAR(20) DEFAULT 'texto',
     url         VARCHAR(500),
     modulo      VARCHAR(100) DEFAULT NULL,
     rol_id      TINYINT DEFAULT NULL,
     FOREIGN KEY (rol_id) REFERENCES roles(id)
 );
+
+CREATE TABLE login_log (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    user_id    INT NOT NULL,
+    fecha      DATETIME DEFAULT NOW(),
+    FOREIGN KEY (user_id) REFERENCES usuarios(id)
+);
+
 
 
 

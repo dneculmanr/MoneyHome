@@ -152,6 +152,47 @@ overlay.addEventListener("click", () => {
 
 
 // =========================
+// ADMIN GRAFICOS
+// =========================
+    if (document.getElementById('admin-data')) {
+        const _a     = JSON.parse(document.getElementById('admin-data').textContent);
+        const colores = ['#0d6efd','#dc3545','#fd7e14','#6f42c1','#20c997','#ffc107','#0dcaf0','#198754'];
+
+        if (document.getElementById('adminGraficoDona')) {
+            new Chart(document.getElementById('adminGraficoDona'), {
+                type: 'doughnut',
+                data: {
+                    labels: _a.usuarios_por_rol.map(r => r.nombre),
+                    datasets: [{ data: _a.usuarios_por_rol.map(r => r.total), backgroundColor: colores, borderWidth: 0 }]
+                },
+                options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        if (document.getElementById('adminGraficoBarras')) {
+            new Chart(document.getElementById('adminGraficoBarras'), {
+                type: 'bar',
+                data: {
+                    labels: _a.bancos_uso.map(b => b.nombre),
+                    datasets: [{ label: 'Usuarios', data: _a.bancos_uso.map(b => b.total), backgroundColor: '#0d6efd' }]
+                },
+                options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+            });
+        }
+
+        if (document.getElementById('adminGraficoManuales')) {
+            new Chart(document.getElementById('adminGraficoManuales'), {
+                type: 'doughnut',
+                data: {
+                    labels: _a.manuales_tipo.map(m => m.tipo),
+                    datasets: [{ data: _a.manuales_tipo.map(m => m.total), backgroundColor: colores, borderWidth: 0 }]
+                },
+                options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+    }
+
+// =========================
 // DASHBOARD GRAFICOS
 // =========================
     setTimeout(() => {
