@@ -1,14 +1,16 @@
     <div id="site-header">
-    <header class="header">
-        
-        <div class="logo">
+<header class="header">
+
+    <button class="menu-toggle" id="menu-toggle">☰</button>
+
+    <div class="logo">
+        <a href="/" class="home-link">
             <h1>MoneyHome</h1>
             <img src="/static/Imagenes/logo.png" alt="Logo" class="logo-image">
-        </div>
-        <button class="menu-toggle" id="menu-toggle">☰</button>
+        </a>
+    </div>
 
-    </header>
-
+</header>
     {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
     <div class="container mt-3">
@@ -24,21 +26,11 @@
 
     <nav class="nav-menu">
     <a href="/">Dashboard</a>
-    <a href="/perfil">Perfil</a>
-    {% if session.get('rol') == 3 %}
-    <a href="/familia">Familia</a>
-    <a href="/bancos">Bancos</a>
-    <a href="/categorias">Categorías</a>
-    {% endif %}
     <a href="/mov">Movimientos</a>
-    {% if session.get('rol') == 3 %}
+    <a href="/bancos">Bancos</a>
     <a href="/reportes">Reportes</a>
-    {% endif %}
-    <a href="/tickets">Soporte
-        {% if tickets_no_leidos > 0 %}
-        <span class="badge bg-danger rounded-pill">{{ tickets_no_leidos }}</span>
-        {% endif %}
-    </a>
+    <a href="/perfil">Perfil</a>
+    <a href="/familia">Familia</a>
 
     <a href="/logout" class="logout-btn">Cerrar sesión</a>
 </nav>
