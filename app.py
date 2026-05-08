@@ -19,6 +19,26 @@ app = Flask(__name__)
 app.secret_key = 'secret123'
 app.jinja_env.globals['now'] = datetime.now
 
+@app.context_processor
+def inject_tickets_no_leidos():
+    count = 0
+    if 'user_id' in session:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("""
+                SELECT COUNT(*) AS total FROM tickets t
+                JOIN ticket_mensajes m ON m.ticket_id = t.id
+                JOIN usuarios u ON m.user_id = u.id
+                WHERE t.user_id = %s AND t.leido = 0 AND u.rol_id = 1
+            """, (session['user_id'],))
+            count = cursor.fetchone()['total']
+            cursor.close()
+            conn.close()
+        except:
+            pass
+    return {'tickets_no_leidos': count}
+
 # =========================
 # CONEXIÓN BD
 # =========================

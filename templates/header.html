@@ -34,8 +34,11 @@
     {% if session.get('rol') == 3 %}
     <a href="/reportes">Reportes</a>
     {% endif %}
-    <a href="/autoayuda">Ayuda</a>
-    <a href="/tickets">Soporte</a>
+    <a href="/tickets">Soporte
+        {% if tickets_no_leidos > 0 %}
+        <span class="badge bg-danger rounded-pill">{{ tickets_no_leidos }}</span>
+        {% endif %}
+    </a>
 
     <a href="/logout" class="logout-btn">Cerrar sesión</a>
 </nav>
