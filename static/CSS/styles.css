@@ -15,8 +15,6 @@ body {
 .header {
   display: flex;
   align-items: center;
-  position: relative;
-  justify-content: space-between;
   background-color: #f8b26a;
   padding: 10px 20px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
@@ -83,13 +81,14 @@ body {
   background: rgba(255,255,255,0.3);
 }
 
-/* LOGO */
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  order: 2;
-  margin-left: auto;
+/*boton home */
+
+.home-link {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    text-decoration: none;
+    color: inherit;
 }
 
 .logo-image {
@@ -102,17 +101,44 @@ body {
   color: #fff;
 }
 
+/* LOGO */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+
+  margin-left: auto;
+}
+
+.home-link {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  text-decoration: none;
+  color: inherit;
+}
+
 /* RESPONSIVE */
 @media (max-width: 768px) {
-  .menu-toggle {
-    order: 1;
-  }
 
-  .logo {
-    order: 2;
-    margin-left: auto;
-  }
+.header {
+  display: flex;
+  align-items: center;
 }
+
+.logo {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+}
+
+
+  
+
+
+
+
 
 /* =========================
    USER SECTION
@@ -205,7 +231,6 @@ body {
 .movimientos-ing,
 .movimientos-gas,
 .movimientos-trans,
-.movimientos-pago,
 .movimientos-crear {
   width: 50px;
   height: 50px;
