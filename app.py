@@ -1703,8 +1703,8 @@ def familia():
             (familia_id, session['user_id'])
         )
         conn.commit()
-
-        return redirect('/')
+        flash("Familia creada", "success")
+        return redirect('/familia')
 
     cursor.execute("""
         SELECT f.* FROM familia f
@@ -1737,7 +1737,7 @@ def unirse_familia():
 
     if not familia:
         flash("La familia no existe", "danger")
-        return redirect('/')
+        return redirect('/familia')
 
     cursor.execute("""
         UPDATE usuarios SET familia_id=%s WHERE id=%s
@@ -1748,7 +1748,7 @@ def unirse_familia():
     conn.close()
 
     flash("Te uniste a la familia", "success")
-    return redirect('/')
+    return redirect('/familia')
 
 #Salir de familia
 
