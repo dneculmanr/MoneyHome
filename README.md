@@ -289,6 +289,10 @@ Crear un correo Gmail (ej: moneyhomemain@gmail.com)
 Activar verificación en 2 pasos
 Generar App Password
 
+Para incriptar contraseña
+pip install flask-bcrypt
+
+
 Luego en app.py:
 
 remitente = "moneyhomemain@gmail.com"

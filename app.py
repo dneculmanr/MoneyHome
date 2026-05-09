@@ -11,13 +11,16 @@ from reportlab.lib import colors #para colores en PDF
 from reportlab.lib.pagesizes import A4 #para tamaño de página en PDF
 from reportlab.lib.styles import getSampleStyleSheet #para estilos de texto en PDF
 from reportlab.platypus import SimpleDocTemplate, Table as PdfTable, TableStyle as PdfTableStyle, Paragraph, Spacer #para generar PDF
-import uuid # para generar token único de recuperación de contraseña
+import uuid # para generar token único de recuperación de contraseña.
+from flask_bcrypt import Bcrypt # para hashear contraseñas.
+
 
 
 # CONFIGURACIÓN INICIAL DE FLASK
 app = Flask(__name__)
 app.secret_key = 'secret123'
 app.jinja_env.globals['now'] = datetime.now
+bcrypt = Bcrypt(app)
 
 
 # =========================
@@ -39,19 +42,22 @@ def get_db_connection():
 # =========================
 # LOGIN
 # =========================
+# ENDPOINT PARA MOSTRAR VISTA DE login y procesar formulario de login.
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
+        
         email = request.form['email']
         password = request.form['password']
 
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-
-        cursor.execute("SELECT * FROM usuarios WHERE email=%s AND password=%s", (email, password))
+        #Se busca el usuario por email, NO por contraseña.
+        cursor.execute("SELECT * FROM usuarios WHERE email=%s", (email,))
         user = cursor.fetchone()
         
-        if user:
+        # El bycrypt compara con la contraseña ingresada con eñ hash guardado en la base de datos, y devuelve true si coinciden.
+        if user and bcrypt.check_password_hash(user['password'], password):
             
             session['user_id'] = user['id']
             session['nombre'] = user['nombre']
@@ -178,6 +184,10 @@ def register():
             conn.close()
             return redirect('/register')
 
+        # Generar hash seguro de la contraseña
+        password_plano = request.form['password']
+        password_hash = bcrypt.generate_password_hash(password_plano).decode('utf-8')
+
         # Si no existe, insertar nuevo usuario 2 (limitado) por defecto, a menos que marque que es profesional.
         rol = int(request.form.get('rol', 2))  # 3 si marcó profesional, 2 (limitado) si no
         cursor.execute("""
@@ -186,7 +196,7 @@ def register():
         """, (
             request.form['nombre'],
             email,
-            request.form['password'],
+            password_hash, # Aquí se guarda el hash, no la contraseña en texto plano.
             rol
         ))
 
@@ -331,7 +341,10 @@ def admin_usuarios_crear():
     nombre = request.form['nombre']
     email = request.form['email']
     password = request.form['password']
+    password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
     rol_id = int(request.form['rol_id'])
+
+
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -339,7 +352,7 @@ def admin_usuarios_crear():
     cursor.execute("""
         INSERT INTO usuarios (nombre, email, password, rol_id)
         VALUES (%s, %s, %s, %s)
-    """, (nombre, email, password, rol_id))
+    """, (nombre, email, password_hash, rol_id))
 
     conn.commit()
     cursor.close()
@@ -366,11 +379,13 @@ def admin_usuarios_editar():
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+
     cursor.execute("""
         UPDATE usuarios
         SET nombre=%s, email=%s, password=%s, rol_id=%s
         WHERE id=%s
-    """, (nombre, email, password, rol_id, user_id))
+    """, (nombre, email, password_hash, rol_id, user_id))
 
     conn.commit()
     cursor.close()
@@ -2041,11 +2056,12 @@ def perfil():
     cursor = conn.cursor(dictionary=True)
 
     if request.method == 'POST':
+        password_hash = bcrypt.generate_password_hash(request.form['password']).decode('utf-8')
         cursor.execute("""
             UPDATE usuarios
             SET nombre=%s, email=%s, password=%s
             WHERE id=%s
-        """,(request.form['nombre'],request.form['email'],request.form['password'],session['user_id']))
+        """,(request.form['nombre'],request.form['email'],password_hash,session['user_id']))
 
         conn.commit()
         session['nombre'] = request.form['nombre']
@@ -2683,12 +2699,15 @@ def reset_password(token):
 
     if request.method == 'POST':
         nueva_password = request.form['password']
+        nueva_password_hash = bcrypt.generate_password_hash(nueva_password).decode('utf-8')
 
         cursor.execute("""
             UPDATE usuarios 
             SET password=%s, reset_token=NULL, reset_expira=NULL
             WHERE id=%s
-        """, (nueva_password, user['id']))
+        """, (nueva_password_hash, user['id']))  # ✓ usa 'nueva_password_hash' en vez de 'nueva_password'
+
+
 
         conn.commit()
         cursor.close()
