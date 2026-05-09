@@ -49,10 +49,10 @@ def login():
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
 
-        cursor.execute("SELECT * FROM usuarios WHERE email=%s AND password=%s", (email, password))
+        cursor.execute("SELECT * FROM usuarios WHERE email=%s", (email,))
         user = cursor.fetchone()
-        
-        if user:
+
+        if user and bcrypt.check_password_hash(user['password'], password):
             
             session['user_id'] = user['id']
             session['nombre'] = user['nombre']
