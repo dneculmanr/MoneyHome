@@ -344,3 +344,26 @@ body {
 body.menu-open {
   overflow: hidden;
 }
+
+/* =========================
+   TICKET DETALLE
+========================= */
+
+.ticket-detalle-main {
+  max-width: 750px;
+}
+
+.hilo-conversacion {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.mensaje-usuario {
+  background: #e8f4fd;
+  border-left: 4px solid #0d6efd;
+}
+
+.mensaje-admin {
+  background: #eafaf1;
+  border-left: 4px solid #198754;
+}
